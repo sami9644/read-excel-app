@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forest Readers</title>
+<style>
+:root{
+  --night:#143328; --moss:#2f6b4f; --leaf:#4f9a63; --firefly:#ffd84d; --cap:#e4572e;
+  --berry:#7b4fb8; --sky:#3a8fd6; --paper:#fffaf0; --ink:#25322b; --soft:#e8f3e3;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:"Nunito","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
+  background:radial-gradient(circle at 20% 10%,#1f4a39 0,var(--night) 60%);
+  color:var(--ink);display:flex;justify-content:center;align-items:center;padding:16px;
+}
+#app{
+  width:100%;max-width:450px;min-height:680px;max-height:96vh;background:var(--paper);
+  border-radius:36px;box-shadow:0 24px 60px rgba(0,0,0,.45),0 0 0 8px #0e2219;
+  position:relative;overflow:hidden;display:flex;flex-direction:column;
+}
+.screen{display:none;flex:1;flex-direction:column;padding:24px 22px;overflow-y:auto}
+.screen.active{display:flex}
+button{font-family:inherit;cursor:pointer;border:none}
+button:focus-visible{outline:4px solid var(--sky);outline-offset:3px}
+
+/* Welcome */
+#welcome{align-items:center;justify-content:center;text-align:center;gap:18px;
+  background:linear-gradient(180deg,var(--soft) 0,var(--paper) 70%)}
+.mascot{font-size:110px;line-height:1;animation:bounce 1.2s ease-in-out infinite;filter:drop-shadow(0 12px 8px rgba(0,0,0,.18))}
+.shadow{width:80px;height:12px;border-radius:50%;background:rgba(0,0,0,.15);animation:shadow 1.2s ease-in-out infinite;margin-top:-6px}
+@keyframes bounce{0%,100%{transform:translateY(0) scale(1,.96)}50%{transform:translateY(-28px) scale(1,1.04)}}
+@keyframes shadow{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(.6);opacity:.3}}
+h1{font-size:2.3rem;line-height:1.1;color:var(--moss);font-weight:900}
+.sub{font-size:1.15rem;color:#4b5d52;max-width:300px;line-height:1.5}
+.big-btn{
+  width:100%;padding:20px;border-radius:24px;font-size:1.4rem;font-weight:900;color:#fff;
+  background:var(--cap);box-shadow:0 8px 0 #a83a1b;transition:transform .08s,box-shadow .08s;
+}
+.big-btn:active{transform:translateY(6px);box-shadow:0 2px 0 #a83a1b}
+.big-btn.green{background:var(--leaf);box-shadow:0 8px 0 #2f6b4f}
+.big-btn.green:active{box-shadow:0 2px 0 #2f6b4f}
+
+/* Reading canvas */
+.top{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.step-label{font-weight:900;color:var(--moss);white-space:nowrap;font-size:1rem}
+.bar{flex:1;height:16px;background:#dfe9d8;border-radius:10px;overflow:hidden}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--leaf),var(--firefly));border-radius:10px;transition:width .5s ease}
+.score-pill{background:var(--firefly);padding:6px 12px;border-radius:20px;font-weight:900;font-size:.95rem}
+
+.story{
+  background:#fff;border:3px solid var(--soft);border-radius:28px;padding:22px 18px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 6px 0 var(--soft);
+}
+.story p{flex:1;font-size:1.9rem;line-height:1.6;font-weight:800;color:var(--ink);letter-spacing:.02em}
+.story u{text-decoration-color:var(--cap);text-decoration-thickness:5px;text-underline-offset:6px}
+.speak{
+  width:64px;height:64px;border-radius:50%;font-size:1.9rem;background:var(--sky);color:#fff;
+  box-shadow:0 5px 0 #226aa6;flex-shrink:0;
+}
+.speak:active{transform:translateY(4px);box-shadow:0 1px 0 #226aa6}
+.speak.talking{animation:pulse .6s infinite}
+@keyframes pulse{50%{transform:scale(1.12)}}
+
+.question{margin:24px 4px 14px;font-size:1.3rem;font-weight:900;color:var(--moss);line-height:1.35}
+.choices{display:flex;flex-direction:column;gap:14px}
+.choice{
+  padding:18px;border-radius:22px;font-size:1.7rem;font-weight:900;color:#fff;
+  box-shadow:0 7px 0 rgba(0,0,0,.22);transition:transform .08s,box-shadow .08s;
+}
+.choice:nth-child(1){background:var(--berry)}
+.choice:nth-child(2){background:var(--sky)}
+.choice:nth-child(3){background:var(--cap)}
+.choice:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.22)}
+.choice.wrong{animation:shake .45s;opacity:.55}
+.choice:disabled{cursor:default}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-12px)}40%{transform:translateX(12px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+.hint{min-height:48px;margin-top:16px;text-align:center;font-weight:800;font-size:1.1rem;color:#8a5a00;
+  background:#fff3c4;border-radius:16px;padding:12px;visibility:hidden}
+.hint.show{visibility:visible}
+
+/* Reward overlay */
+#overlay{
+  position:absolute;inset:0;background:rgba(20,51,40,.85);display:none;align-items:center;justify-content:center;
+  padding:24px;z-index:10;
+}
+#overlay.show{display:flex}
+.pop{
+  background:var(--paper);border-radius:32px;padding:28px 22px;text-align:center;width:100%;
+  animation:pop .5s cubic-bezier(.2,1.6,.4,1);
+}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.pop .emojis{font-size:3.4rem;letter-spacing:6px}
+.pop h2{font-size:2rem;color:var(--moss);margin:10px 0 4px}
+.pop p{font-size:1.15rem;margin-bottom:20px;color:#4b5d52;font-weight:700}
+.confetti{position:absolute;top:-30px;font-size:1.8rem;animation:fall 2.4s linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(780px) rotate(360deg);opacity:.8}}
+
+/* Game over */
+#over{align-items:center;justify-content:center;text-align:center;gap:14px;background:linear-gradient(180deg,#fff3c4 0,var(--paper) 70%)}
+.trophy{font-size:96px;animation:bounce 1.4s ease-in-out infinite}
+.summary{width:100%;background:#fff;border-radius:26px;padding:20px;box-shadow:0 6px 0 var(--soft);border:3px solid var(--soft)}
+.summary .total{font-size:3rem;font-weight:900;color:var(--cap)}
+.summary .stars{font-size:2.2rem;margin-top:4px}
+.summary .detail{font-size:1.1rem;font-weight:700;color:#4b5d52;margin-top:6px}
+
+@media (max-width:480px){
+  body{padding:0}
+  #app{max-height:100vh;min-height:100vh;border-radius:0;box-shadow:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section id="welcome" class="screen active">
+    <div class="mascot" aria-hidden="true">🦉</div>
+    <div class="shadow"></div>
+    <h1>Forest Readers</h1>
+    <p class="sub">Hoot! I'm Ollie. Read with me and help the forest friends.</p>
+    <button class="big-btn" id="startBtn">Start Adventure</button>
+  </section>
+
+  <section id="game" class="screen">
+    <div class="top">
+      <span class="step-label" id="stepLabel">Step 1 of 5</span>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <span class="score-pill" id="scorePill">⭐ 0</span>
+    </div>
+    <div class="story">
+      <p id="storyText"></p>
+      <button class="speak" id="speakBtn" aria-label="Read aloud">🔊</button>
+    </div>
+    <div class="question" id="question"></div>
+    <div class="choices" id="choices"></div>
+    <div class="hint" id="hint" role="status"></div>
+  </section>
+
+  <section id="over" class="screen">
+    <div class="trophy" aria-hidden="true">🏆</div>
+    <h1>Reading Champion!</h1>
+    <div class="summary">
+      <div class="total" id="finalScore">0</div>
+      <div class="stars" id="finalStars"></div>
+      <div class="detail" id="finalDetail"></div>
+    </div>
+    <button class="big-btn green" id="againBtn">Play Again</button>
+  </section>
+
+  <div id="overlay">
+    <div class="pop">
+      <div class="emojis">🎉🌟👏</div>
+      <h2 id="praise">Great reading!</h2>
+      <p id="pointsMsg"></p>
+      <button class="big-btn green" id="nextBtn">Next Level</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var levels = [
+    {text:"A little fox sat on a <u>log</u>.", say:"A little fox sat on a log.",
+     q:"Which word rhymes with the underlined word?", answer:"dog", options:["dog","cat","sun"],
+     hint:"Log, log... say it with me. Which word ends the same way?"},
+    {text:"The owl can <u>see</u> the moon.", say:"The owl can see the moon.",
+     q:"Find the sight word from the story: see", answer:"see", options:["sea","see","saw"],
+     hint:"Look for the word with two e's."},
+    {text:"A frog sat in the <u>rain</u>.", say:"A frog sat in the rain.",
+     q:"Which word rhymes with the underlined word?", answer:"train", options:["bug","train","leaf"],
+     hint:"Rain, rain... which word sounds like it?"},
+    {text:"The bunny has a red hat.", say:"The bunny has a red hat.",
+     q:"What color is the hat?", answer:"red", options:["blue","green","red"],
+     hint:"Read the sentence again with the speaker."},
+    {text:"<u>We</u> can run to the tree.", say:"We can run to the tree.",
+     q:"Click the sight word from the story: we", answer:"we", options:["we","me","he"],
+     hint:"It's the first word in the sentence."}
+  ];
+
+  var $ = function(id){return document.getElementById(id)};
+  var idx = 0, score = 0, tries = 0, firstTry = 0, locked = false, audioCtx = null;
+
+  function show(id){
+    ["welcome","game","over"].forEach(function(s){$(s).classList.toggle("active", s===id)});
+  }
+
+  function shuffle(a){
+    a = a.slice();
+    for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}
+    return a;
+  }
+
+  function speak(text, btn){
+    if(!("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.8; u.pitch = 1.15; u.lang = "en-US";
+    if(btn){
+      btn.classList.add("talking");
+      u.onend = u.onerror = function(){btn.classList.remove("talking")};
+    }
+    window.speechSynthesis.speak(u);
+  }
+
+  function beep(good){
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      var notes = good ? [523.25,659.25,783.99,1046.5] : [300,240];
+      notes.forEach(function(f,i){
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        var t = audioCtx.currentTime + i*0.12;
+        o.type = good ? "triangle" : "sine"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001,t);
+        g.gain.exponentialRampToValueAtTime(0.25,t+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t); o.stop(t+0.22);
+      });
+    }catch(e){}
+  }
+
+  function render(){
+    var L = levels[idx];
+    tries = 0; locked = false;
+    $("stepLabel").textContent = "Step " + (idx+1) + " of " + levels.length;
+    $("fill").style.width = (idx/levels.length*100) + "%";
+    $("scorePill").textContent = "⭐ " + score;
+    $("storyText").innerHTML = L.text;
+    $("question").textContent = L.q;
+    var hint = $("hint"); hint.classList.remove("show"); hint.textContent = "";
+    var box = $("choices"); box.innerHTML = "";
+    shuffle(L.options).forEach(function(w){
+      var b = document.createElement("button");
+      b.className = "choice"; b.textContent = w; b.type = "button";
+      b.addEventListener("click", function(){pick(b,w)});
+      box.appendChild(b);
+    });
+    setTimeout(function(){speak(L.say, $("speakBtn"))}, 350);
+  }
+
+  function pick(btn, word){
+    if(locked) return;
+    var L = levels[idx];
+    if(word === L.answer){
+      locked = true;
+      var pts = tries === 0 ? 10 : 5;
+      if(tries === 0) firstTry++;
+      score += pts;
+      $("scorePill").textContent = "⭐ " + score;
+      $("fill").style.width = ((idx+1)/levels.length*100) + "%";
+      var praises = ["Great reading!","You did it!","Hoot hoot hooray!","Super reader!","Wonderful!"];
+      $("praise").textContent = praises[idx % praises.length];
+      $("pointsMsg").textContent = "+" + pts + " points" + (tries===0 ? " for getting it first try!" : "");
+      $("nextBtn").textContent = idx === levels.length-1 ? "See My Results" : "Next Level";
+      $("overlay").classList.add("show");
+      beep(true);
+      confetti();
+      setTimeout(function(){speak("Great job!")}, 500);
+      $("nextBtn").focus();
+    }else{
+      tries++;
+      beep(false);
+      btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
+      var h = $("hint");
+      h.textContent = "Not quite. Try again! " + L.hint;
+      h.classList.add("show");
+    }
+  }
+
+  function confetti(){
+    var items = ["🎉","🌟","⭐","🍄","🍃","✨"];
+    for(var i=0;i<18;i++){
+      var s = document.createElement("span");
+      s.className = "confetti";
+      s.textContent = items[i % items.length];
+      s.style.left = Math.random()*95 + "%";
+      s.style.animationDelay = Math.random()*0.8 + "s";
+      $("overlay").appendChild(s);
+      (function(el){setTimeout(function(){el.remove()},3400)})(s);
+    }
+  }
+
+  function finish(){
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    var max = levels.length*10;
+    $("finalScore").textContent = score + " / " + max;
+    var stars = score >= max ? 3 : score >= max*0.7 ? 2 : 1;
+    $("finalStars").textContent = new Array(stars+1).join("🌟");
+    $("finalDetail").textContent = firstTry + " of " + levels.length + " correct on the first try";
+    show("over");
+    beep(true);
+    speak("You are a Reading Champion!");
+  }
+
+  function start(){
+    idx = 0; score = 0; firstTry = 0;
+    show("game"); render();
+  }
+
+  $("startBtn").addEventListener("click", function(){
+    try{audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)()}catch(e){}
+    start();
+  });
+  $("againBtn").addEventListener("click", start);
+  $("speakBtn").addEventListener("click", function(){speak(levels[idx].say, this)});
+  $("nextBtn").addEventListener("click", function(){
+    $("overlay").classList.remove("show");
+    var old = $("overlay").querySelectorAll(".confetti");
+    for(var i=0;i<old.length;i++) old[i].remove();
+    idx++;
+    if(idx >= levels.length) finish(); else render();
+  });
+})();
+</script>
+</body>
+</html>

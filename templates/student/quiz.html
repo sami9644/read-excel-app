@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Quiz Carousel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/student/passages">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-sm">
+                        &larr;
+                    </div>
+                </a>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 leading-tight">{{ passage.title }}</h1>
+                    <p class="text-xs text-slate-500">Comprehension Quiz Carousel</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-4xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        {% if not quizzes %}
+        <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center">
+            <h2 class="text-lg font-bold text-slate-700">No quizzes available for this passage yet.</h2>
+            <p class="text-sm text-slate-500 mt-2">Please check back later or choose another passage.</p>
+        </div>
+        {% else %}
+        
+        <!-- Carousel Navigation Tabs -->
+        <div class="flex items-center justify-between mb-6 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-2 overflow-x-auto">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2">Quizzes:</span>
+                {% for q in quizzes %}
+                <button onclick="switchQuiz('{{ loop.index0 }}')" id="tab-btn-{{ loop.index0 }}" 
+                    class="px-4 py-2 rounded-lg text-sm font-semibold transition border {{ 'border-blue-600 bg-blue-50 text-blue-700' if loop.first else 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50' }}">
+                    Quiz {{ loop.index0 + 1 }} <span id="tab-check-{{ loop.index0 }}" class="text-xs text-emerald-600 ml-1 hidden">✓</span>
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quiz Container Carousel Slides -->
+        <div id="quiz-slides-container">
+            {% for q in quizzes %}
+            {% set outer_slide_index = loop.index0 %}
+            <div class="quiz-slide {{ '' if loop.first else 'hidden' }}" id="quiz-slide-{{ outer_slide_index }}">
+                
+                <!-- Score Summary Box (Hidden Initially) -->
+                <div id="score-summary-{{ outer_slide_index }}" class="hidden mb-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <span class="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 font-semibold text-xs rounded-full uppercase tracking-wider mb-1">
+                            Evaluation Complete
+                        </span>
+                        <h3 class="text-lg font-bold text-slate-900">Your Score Results</h3>
+                    </div>
+                    <div class="text-right">
+                        <div id="score-text-{{ outer_slide_index }}" class="text-2xl font-black text-blue-600">0 / 0</div>
+                        <div id="percentage-text-{{ outer_slide_index }}" class="text-xs font-medium text-slate-500">0%</div>
+                    </div>
+                </div>
+
+                <!-- Questions Form -->
+                <form id="form-{{ outer_slide_index }}" class="space-y-6" onsubmit="submitQuiz(event, '{{ outer_slide_index }}')">
+                    <div class="space-y-6">
+                        {% for item in q.questions %}
+                        {% set outer_q_index = loop.index0 %}
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                            <div class="flex items-start gap-3">
+                                <span class="flex-shrink-0 w-7 h-7 bg-blue-100 text-blue-800 font-bold text-sm rounded-lg flex items-center justify-center">
+                                    {{ loop.index }}
+                                </span>
+                                <h3 class="text-base font-semibold text-slate-900 pt-0.5">
+                                    {{ item.question }}
+                                </h3>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-0 sm:pl-10">
+                                {% for opt_key, opt_val in item.options.items() %}
+                                <label id="label-{{ outer_slide_index }}-{{ outer_q_index }}-{{ opt_key }}" class="flex items-start p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition">
+                                    <input type="radio" name="q-{{ outer_slide_index }}-{{ outer_q_index }}" value="{{ opt_key }}" 
+                                        class="w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500 mt-0.5" onchange="clearWarning('{{ outer_slide_index }}')">
+                                    <span class="ml-3 text-sm text-slate-800 font-medium"><strong class="text-slate-700">{{ opt_key }}.</strong> {{ opt_val }}</span>
+                                    <span id="icon-{{ outer_slide_index }}-{{ outer_q_index }}-{{ opt_key }}" class="ml-auto hidden"></span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div id="feedback-{{ outer_slide_index }}-{{ outer_q_index }}" class="ml-0 sm:ml-10 hidden p-3 rounded-xl text-xs font-semibold"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <p id="warning-{{ outer_slide_index }}" class="text-xs text-rose-600 font-semibold hidden">Please answer all questions before submitting.</p>
+
+                    <div class="pt-4 flex items-center justify-end gap-3">
+                        <button type="button" id="reset-btn-{{ outer_slide_index }}" onclick="resetQuiz('{{ outer_slide_index }}')" class="hidden px-6 py-3 font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition shadow-sm">
+                            Try Again / Retake
+                        </button>
+                        <button type="submit" id="submit-btn-{{ outer_slide_index }}" class="px-8 py-3 font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-sm">
+                            Evaluate Answers
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </main>
+
+    <script>
+        const quizzesData = {{ quizzes | tojson | safe }};
+
+        function switchQuiz(index) {
+            document.querySelectorAll('.quiz-slide').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('[id^="tab-btn-"]').forEach(btn => {
+                btn.className = "px-4 py-2 rounded-lg text-sm font-semibold transition border border-slate-200 bg-white text-slate-600 hover:bg-slate-50";
+            });
+
+            document.getElementById(`quiz-slide-${index}`).classList.remove('hidden');
+            const activeTab = document.getElementById(`tab-btn-${index}`);
+            activeTab.className = "px-4 py-2 rounded-lg text-sm font-semibold transition border border-blue-600 bg-blue-50 text-blue-700";
+        }
+
+        function clearWarning(slideIndex) {
+            document.getElementById(`warning-${slideIndex}`).classList.add('hidden');
+        }
+
+        function submitQuiz(event, slideIndex) {
+            event.preventDefault();
+            const quiz = quizzesData[slideIndex];
+            let allAnswered = true;
+
+            quiz.questions.forEach((q, qIdx) => {
+                const inputs = document.querySelectorAll(`input[name="q-${slideIndex}-${qIdx}"]`);
+                let answered = Array.from(inputs).some(input => input.checked);
+                if (!answered) allAnswered = false;
+            });
+
+            if (!allAnswered) {
+                document.getElementById(`warning-${slideIndex}`).classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById(`warning-${slideIndex}`).classList.add('hidden');
+            let score = 0;
+
+            quiz.questions.forEach((q, qIdx) => {
+                const selected = document.querySelector(`input[name="q-${slideIndex}-${qIdx}"]:checked`);
+                const userAns = selected ? selected.value : null;
+                const correctAns = q.correct_answer;
+                const feedbackEl = document.getElementById(`feedback-${slideIndex}-${qIdx}`);
+
+                document.querySelectorAll(`input[name="q-${slideIndex}-${qIdx}"]`).forEach(inp => inp.disabled = true);
+
+                for (const key of Object.keys(q.options)) {
+                    const label = document.getElementById(`label-${slideIndex}-${qIdx}-${key}`);
+                    const icon = document.getElementById(`icon-${slideIndex}-${qIdx}-${key}`);
+                    label.classList.remove('hover:bg-slate-50', 'cursor-pointer');
+
+                    if (key === correctAns) {
+                        label.className = "flex items-start p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50/60 font-medium text-emerald-900 transition-all";
+                        icon.innerHTML = `<svg class="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>`;
+                        icon.classList.remove('hidden');
+                    } else if (key === userAns && userAns !== correctAns) {
+                        label.className = "flex items-start p-4 rounded-xl border-2 border-rose-400 bg-rose-50/60 font-medium text-rose-900 transition-all";
+                        icon.innerHTML = `<svg class="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>`;
+                        icon.classList.remove('hidden');
+                    } else {
+                        label.className = "flex items-start p-4 rounded-xl border border-slate-200 bg-slate-50 opacity-50";
+                    }
+                }
+
+                feedbackEl.classList.remove('hidden');
+                if (userAns === correctAns) {
+                    score++;
+                    feedbackEl.className = "ml-0 sm:ml-10 p-3 rounded-xl text-xs font-semibold bg-emerald-100 text-emerald-800";
+                    feedbackEl.innerHTML = `✓ Correct answer!`;
+                } else {
+                    feedbackEl.className = "ml-0 sm:ml-10 p-3 rounded-xl text-xs font-semibold bg-rose-100 text-rose-800";
+                    feedbackEl.innerHTML = `✗ Incorrect. The correct option is ${correctAns}.`;
+                }
+            });
+
+            const total = quiz.questions.length;
+            const pct = Math.round((score / total) * 100);
+            document.getElementById(`score-text-${slideIndex}`).innerText = `${score} / ${total}`;
+            document.getElementById(`percentage-text-${slideIndex}`).innerText = `${pct}% Accuracy`;
+            document.getElementById(`score-summary-${slideIndex}`).classList.remove('hidden');
+            document.getElementById(`tab-check-${slideIndex}`).classList.remove('hidden');
+
+            document.getElementById(`submit-btn-${slideIndex}`).classList.add('hidden');
+            document.getElementById(`reset-btn-${slideIndex}`).classList.remove('hidden');
+        }
+
+        function resetQuiz(slideIndex) {
+            const quiz = quizzesData[slideIndex];
+
+            quiz.questions.forEach((q, qIdx) => {
+                document.querySelectorAll(`input[name="q-${slideIndex}-${qIdx}"]`).forEach(inp => {
+                    inp.disabled = false;
+                    inp.checked = false;
+                });
+
+                for (const key of Object.keys(q.options)) {
+                    const label = document.getElementById(`label-${slideIndex}-${qIdx}-${key}`);
+                    const icon = document.getElementById(`icon-${slideIndex}-${qIdx}-${key}`);
+                    label.className = "flex items-start p-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition";
+                    icon.classList.add('hidden');
+                    icon.innerHTML = '';
+                }
+
+                const feedbackEl = document.getElementById(`feedback-${slideIndex}-${qIdx}`);
+                feedbackEl.classList.add('hidden');
+                feedbackEl.innerHTML = '';
+            });
+
+            document.getElementById(`score-summary-${slideIndex}`).classList.add('hidden');
+            document.getElementById(`submit-btn-${slideIndex}`).classList.remove('hidden');
+            document.getElementById(`reset-btn-${slideIndex}`).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

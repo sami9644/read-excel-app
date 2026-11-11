@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - ReadExcel</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full antialiased text-slate-800 flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Admin Top Navbar Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-lg border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Brand & Admin Indicator -->
+                <a href="/admin/dashboard" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform duration-300">
+                        <i class="fa-solid me-0.5 fa-shield-halved text-xl"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300 tracking-tight">ReadExcel</span>
+                        <span class="text-[10px] font-bold text-brand-400 uppercase tracking-widest -mt-1">Admin Panel</span>
+                    </div>
+                </a>
+
+                <!-- Desktop Navigation Links -->
+                <nav class="hidden md:flex items-center space-x-6 font-semibold text-sm">
+                    <a href="/admin/dashboard" class="text-white bg-slate-800 px-4 py-2 rounded-xl transition-colors">
+                        <i class="fa-solid fa-house mr-1.5 text-brand-400"></i>Home
+                    </a>
+                    <a href="/admin/passages" class="text-slate-300 hover:text-white hover:bg-slate-800/60 px-3.5 py-2 rounded-xl transition-colors">
+                        <i class="fa-solid fa-book-open mr-1.5 text-slate-400"></i>Manage passages
+                    </a>
+                    <a href="/admin/evaluate" class="text-slate-300 hover:text-white hover:bg-slate-800/60 px-3.5 py-2 rounded-xl transition-colors">
+                        <i class="fa-solid fa-file-audio mr-1.5 text-slate-400"></i>Evaluate audio
+                    </a>
+                    <a href="/admin/logout" class="text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 px-4 py-2 rounded-xl transition-colors font-semibold border border-rose-800/40">
+                        <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Log out
+                    </a>
+                </nav>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="admin-mobile-btn" type="button" class="p-2 rounded-lg text-slate-300 hover:bg-slate-800 focus:outline-none" aria-label="Toggle Navigation">
+                        <i class="fa-solid fa-bars text-xl" id="admin-menu-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Nav -->
+        <div id="admin-mobile-menu" class="hidden md:hidden border-t border-slate-800 bg-slate-900 px-4 pt-3 pb-6 space-y-2 font-medium">
+            <a href="/admin/dashboard" class="block py-2.5 px-3 rounded-lg bg-slate-800 text-white font-bold">
+                <i class="fa-solid fa-house mr-2 text-brand-400"></i>Home
+            </a>
+            <a href="/admin/passages" class="block py-2.5 px-3 rounded-lg text-slate-300 hover:bg-slate-800">
+                <i class="fa-solid fa-book-open mr-2 text-slate-400"></i>Manage passages
+            </a>
+            <a href="/admin/evaluate" class="block py-2.5 px-3 rounded-lg text-slate-300 hover:bg-slate-800">
+                <i class="fa-solid fa-file-audio mr-2 text-slate-400"></i>Evaluate audio
+            </a>
+            <a href="/logout" class="block py-2.5 px-3 rounded-lg text-rose-400 hover:bg-rose-950/40 font-semibold">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Log out
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div class="content">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+        <p>&copy; ReadExcel Admin Control Portal. All rights reserved.</p>
+    </footer>
+
+    <!-- Mobile Menu Script -->
+    <script>
+        const adminBtn = document.getElementById('admin-mobile-btn');
+        const adminNav = document.getElementById('admin-mobile-menu');
+        const adminIcon = document.getElementById('admin-menu-icon');
+
+        adminBtn.addEventListener('click', () => {
+            adminNav.classList.toggle('hidden');
+            if (adminNav.classList.contains('hidden')) {
+                adminIcon.classList.remove('fa-xmark');
+                adminIcon.classList.add('fa-bars');
+            } else {
+                adminIcon.classList.remove('fa-bars');
+                adminIcon.classList.add('fa-xmark');
+            }
+        });
+    </script>
+</body>
+</html>

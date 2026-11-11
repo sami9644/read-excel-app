@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - ReadExcel Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full antialiased text-slate-800 flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Header Navigation Bar -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="/" class="flex items-center gap-3 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform duration-300">
+                        <i class="fa-solid me-0.5 fa-book-open-reader text-lg"></i>
+                    </div>
+                    <span class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-700 to-indigo-600 tracking-tight">ReadExcel</span>
+                </a>
+
+                <!-- Back to Main Site -->
+                <a href="/" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-brand-600 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Back to Main Site
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <div class="w-full max-w-md space-y-6">
+            
+            <!-- Admin Auth Card -->
+            <div class="bg-white border border-slate-200/80 rounded-3xl shadow-xl overflow-hidden p-6 sm:p-8 space-y-6">
+                
+                <!-- Badge & Title -->
+                <div class="text-center space-y-3">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold tracking-wide uppercase">
+                        <i class="fa-solid fa-user-shield text-brand-400"></i> Administration Portal
+                    </div>
+                    <h1 class="text-2xl font-black text-slate-900 tracking-tight">Admin Sign In</h1>
+                    <p class="text-xs text-slate-500">Access passage management and student performance controls</p>
+                </div>
+
+                <!-- Form targeting /admin/login -->
+                <form action="/admin/login" method="POST" class="space-y-4">
+                    <!-- Admin Username / Email -->
+                    <div>
+                        <label for="admin-username" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Admin Username or Email</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-user-gear text-sm"></i>
+                            </div>
+                            <input type="text" id="admin-username" name="admin_username" required placeholder="admin@readexcel.com" class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-slate-50/50">
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <label for="admin-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Password</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-key text-sm"></i>
+                            </div>
+                            <input type="password" id="admin-password" name="admin_password" required placeholder="••••••••" class="w-full pl-10 pr-10 py-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-slate-50/50">
+                            <button type="button" onclick="togglePasswordVisibility('admin-password', 'admin-eye-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600" aria-label="Toggle password visibility">
+                                <i class="fa-solid fa-eye text-sm" id="admin-eye-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full py-3.5 mt-2 rounded-xl text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 shadow-lg shadow-slate-900/20 hover:shadow-xl transition-all duration-300">
+                        Log In as Admin
+                        <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>
+                    </button>
+                </form>
+
+            </div>
+
+            <!-- Security Notice -->
+            <div class="text-center text-xs text-slate-400 flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-lock text-[10px]"></i> Authorized administrative access only
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+        <p>&copy; ReadExcel Reading Practice Portal. All rights reserved.</p>
+    </footer>
+
+    <!-- Password Visibility Script -->
+    <script>
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+</body>
+</html>

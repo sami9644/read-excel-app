@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Record Reading - ReadExcel</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full antialiased text-slate-800 flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Header Navigation Bar -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="/student/dashboard" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:scale-105 transition-transform duration-300">
+                        <i class="fa-solid me-0.5 fa-book-open-reader text-xl"></i>
+                    </div>
+                    <span class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-700 to-indigo-600 tracking-tight">ReadExcel</span>
+                </a>
+                <a href="/student/passages" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-brand-600 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Back to Passages
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="flex-grow max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+        
+        <!-- Reading Passage Card -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-lg p-6 sm:p-8 space-y-4">
+            <div class="flex items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <span class="w-10 h-10 rounded-2xl bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-book-open"></i>
+                    </span>
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-brand-600">Reading Passage</span>
+                        <h1 class="text-2xl font-black text-slate-900 tracking-tight">
+                            {{ data.title }}
+                        </h1>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <p class="text-base sm:text-lg text-slate-700 leading-relaxed font-serif italic">
+                    "{{ data.passage }}"
+                </p>
+            </div>
+        </div>
+
+        <!-- Audio Recorder Card -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-lg p-6 sm:p-8 space-y-6 text-center">
+            
+            <div class="space-y-1">
+                <h2 class="text-xl font-bold text-slate-900 tracking-tight">Record Your Reading</h2>
+                <p class="text-xs sm:text-sm text-slate-500">
+                    Click the microphone button to start recording your voice. Read clearly and stop when finished.
+                </p>
+            </div>
+
+            <!-- Live Timer / Status indicator -->
+            <div class="py-4">
+                <div id="recording-status" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold transition-all">
+                    <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                    <span id="status-text">Ready to Record</span>
+                </div>
+                <div id="timer" class="text-3xl font-black text-slate-900 tracking-wider mt-2 hidden">00:00</div>
+            </div>
+
+            <!-- Recording Action Buttons -->
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <button type="button" id="record-btn" onclick="toggleRecording()" class="w-16 h-16 rounded-full bg-brand-600 hover:bg-brand-700 text-white text-2xl shadow-lg shadow-brand-500/40 hover:scale-105 transition-all flex items-center justify-center">
+                    <i id="record-icon" class="fa-solid fa-microphone"></i>
+                </button>
+            </div>
+
+            <!-- Playback & Submit Section (Hidden until recording completes) -->
+            <div id="playback-container" class="hidden space-y-4 pt-4 border-t border-slate-100 max-w-md mx-auto">
+                <div class="text-left">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Review Recording</label>
+                    <audio id="audio-preview" controls class="w-full h-10 rounded-lg outline-none bg-slate-50 border border-slate-200 shadow-sm"></audio>
+                </div>
+
+                <button type="button" id="submit-btn" onclick="uploadRecording()" class="w-full py-4 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                    <span>Submit Recording</span>
+                </button>
+            </div>
+
+            <!-- Error Alert -->
+            <div id="mic-error" class="hidden mt-3 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700 flex items-center gap-2 text-left">
+                <i class="fa-solid fa-circle-exclamation text-rose-500 text-sm"></i>
+                <span id="mic-error-text">Microphone access was denied or is not supported by your browser.</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+        <p>&copy; ReadExcel Reading Practice Portal. All rights reserved.</p>
+    </footer>
+
+    <!-- Audio Recording Script -->
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let recordedBlob = null;
+        let isRecording = false;
+        let timerInterval;
+        let secondsElapsed = 0;
+
+        const recordBtn = document.getElementById('record-btn');
+        const recordIcon = document.getElementById('record-icon');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.getElementById('status-dot');
+        const timerDisplay = document.getElementById('timer');
+        const playbackContainer = document.getElementById('playback-container');
+        const audioPreview = document.getElementById('audio-preview');
+        const micError = document.getElementById('mic-error');
+        const micErrorText = document.getElementById('mic-error-text');
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                // Start Recording
+                audioChunks = [];
+                micError.classList.add('hidden');
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    
+                    mediaRecorder.ondataavailable = event => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        recordedBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        const audioUrl = URL.createObjectURL(recordedBlob);
+                        audioPreview.src = audioUrl;
+                        playbackContainer.classList.remove('hidden');
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    
+                    // UI adjustments for active recording
+                    recordBtn.classList.remove('bg-brand-600', 'hover:bg-brand-700', 'shadow-brand-500/40');
+                    recordBtn.classList.add('bg-rose-600', 'hover:bg-rose-700', 'shadow-rose-500/40', 'animate-pulse');
+                    recordIcon.className = 'fa-solid fa-stop text-white';
+                    
+                    statusText.textContent = 'Recording in progress...';
+                    statusDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping';
+                    timerDisplay.classList.remove('hidden');
+                    
+                    secondsElapsed = 0;
+                    clearInterval(timerInterval);
+                    timerInterval = setInterval(() => {
+                        secondsElapsed++;
+                        const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                        const secs = String(secondsElapsed % 60).padStart(2, '0');
+                        timerDisplay.textContent = `${mins}:${secs}`;
+                    }, 1000);
+
+                    playbackContainer.classList.add('hidden');
+                } catch (err) {
+                    micErrorText.textContent = 'Microphone permission denied or device unavailable.';
+                    micError.classList.remove('hidden');
+                }
+            } else {
+                // Stop Recording
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                clearInterval(timerInterval);
+
+                // Reset button states
+                recordBtn.classList.remove('bg-rose-600', 'hover:bg-rose-700', 'shadow-rose-500/40', 'animate-pulse');
+                recordBtn.classList.add('bg-brand-600', 'hover:bg-brand-700', 'shadow-brand-500/40');
+                recordIcon.className = 'fa-solid fa-microphone';
+                
+                statusText.textContent = 'Recording complete! Review below.';
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+            }
+        }
+
+        async function uploadRecording() {
+            if (!recordedBlob) return;
+
+            const formData = new FormData();
+            formData.append('audiorec', recordedBlob, 'recording.mp3');
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Submitting...`;
+
+            try {
+                const response = await fetch('/student/upload/{{ data.passage_id }}', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // Flask returns a script snippet alert/redirect
+                    const resultText = await response.text();
+                    document.open();
+                    document.write(resultText);
+                    document.close();
+                } else {
+                    alert('Error uploading recording.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<span>Submit Recording</span>`;
+                }
+            } catch (err) {
+                alert('Network error during upload.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>Submit Recording</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

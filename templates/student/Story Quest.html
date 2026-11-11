@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Story Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{--a:#7c3aed;--b:#38bdf8;--bg1:#0b1033;--bg2:#2a0f5c;margin:0;min-height:100vh;color:#fff;
+  font-family:"Fredoka","Trebuchet MS",system-ui,sans-serif;background:linear-gradient(160deg,var(--bg1),var(--bg2)) fixed}
+body[data-t=ocean]{--a:#0d9488;--b:#2dd4bf;--bg1:#012a3a;--bg2:#0a7a8a}
+body[data-t=forest]{--a:#65a30d;--b:#a3e635;--bg1:#0f3d22;--bg2:#3b2a14}
+#bg{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.d{position:absolute}
+.d.space{background:#fff;border-radius:50%;animation:tw var(--t) ease-in-out infinite alternate}
+.d.ocean{border:2px solid rgba(255,255,255,.45);border-radius:50%;bottom:-50px;animation:rise var(--t) linear infinite}
+.d.forest{width:14px;height:20px;background:#84cc16;border-radius:0 100% 0 100%;top:-30px;opacity:.55;animation:leaf var(--t) linear infinite}
+@keyframes tw{from{opacity:.15;transform:scale(.6)}to{opacity:1;transform:scale(1.2) translateY(-8px)}}
+@keyframes rise{to{transform:translate(24px,-115vh)}}
+@keyframes leaf{50%{margin-left:40px}to{transform:translateY(112vh) rotate(540deg)}}
+@keyframes slide{from{opacity:0;transform:translateX(70px)}to{opacity:1;transform:none}}
+@keyframes up{from{opacity:0;transform:translateY(80px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes jump{0%,100%{transform:translateY(0)}30%{transform:translateY(-34px) rotate(-6deg)}60%{transform:translateY(-8px) rotate(6deg)}}
+@keyframes droop{0%,100%{transform:none}30%,70%{transform:translateX(-5px) rotate(-7deg)}50%{transform:translateX(5px) rotate(7deg)}}
+@keyframes shake{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes zap{0%,100%{filter:none}50%{filter:brightness(1.6) drop-shadow(0 0 12px var(--b))}}
+@keyframes shine{to{background-position:200% 0}}
+@keyframes starin{from{opacity:0;transform:scale(0) rotate(-200deg)}to{opacity:1;transform:none}}
+@keyframes cfall{to{transform:translate(var(--x),108vh) rotate(720deg)}}
+.slide-in{animation:slide .55s cubic-bezier(.2,1.1,.3,1)}
+.up-in{animation:up .7s cubic-bezier(.2,1.2,.3,1)}
+.glass{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(10px);border-radius:24px;padding:20px}
+.btn{font:inherit;font-weight:600;color:#fff;border:0;cursor:pointer;border-radius:18px;padding:14px 18px;font-size:1.1rem;
+  background:rgba(255,255,255,.16);border:2px solid rgba(255,255,255,.3);transition:transform .15s,box-shadow .2s,background .2s;text-align:center}
+.btn:hover:not(:disabled){box-shadow:0 0 24px var(--b);transform:translateY(-2px)}
+.btn:active:not(:disabled){transform:scale(.94)}
+.btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.btn:disabled{cursor:default}
+.go{background:linear-gradient(135deg,var(--a),var(--b));border-color:transparent;font-size:1.25rem;width:100%}
+.sel{background:linear-gradient(135deg,var(--a),var(--b));border-color:#fff}
+.tcard{display:flex;align-items:center;gap:12px;text-align:left}
+.tcard b{display:block;font-size:1.15rem}.tcard small{opacity:.8}
+.ok{background:#16a34a!important;border-color:#bbf7d0!important;animation:pop .5s}
+.bad{background:#dc2626!important;border-color:#fecaca!important;animation:shake .45s}
+.opt{width:100%}
+.line{font-size:1.25rem;line-height:1.7;margin:0 0 10px;opacity:0;animation:fade .8s forwards}
+.w{display:inline-block;transition:transform .15s,color .15s,text-shadow .15s;cursor:default}
+.w:hover{transform:scale(1.18) translateY(-2px);color:var(--b);text-shadow:0 0 12px var(--b)}
+.panel{margin-bottom:14px;font-size:1rem}
+.panel summary{cursor:pointer;font-weight:600;margin-bottom:6px}
+.panel p{margin:4px 0;padding:4px 8px;border-radius:10px;line-height:1.5}
+.panel p.hl{background:rgba(255,255,255,.22);box-shadow:0 0 14px var(--b)}
+.pbar{height:16px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden}
+#pf{height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--a),var(--b),#fde047,var(--a));background-size:200% 100%;
+  animation:shine 2.5s linear infinite;transition:width .8s cubic-bezier(.3,1.4,.5,1)}
+#pf.zap{animation:shine 2.5s linear infinite,zap .9s}
+.tbar{height:10px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden;margin-bottom:14px}
+.tbar i{display:block;height:100%;width:100%;background:#fde047;border-radius:99px}
+.sent{font-size:1.25rem;line-height:2.4;margin:0}
+.slot{display:inline-block;min-width:92px;height:40px;line-height:36px;padding:0 10px;margin:0 4px;border-radius:12px;text-align:center;
+  border:2px dashed rgba(255,255,255,.55);vertical-align:middle;font-weight:600;transition:all .2s}
+.slot.full{border-style:solid;background:rgba(255,255,255,.22);cursor:pointer}
+.chip{padding:10px 16px;font-size:1.05rem;cursor:grab}
+.chip.used{opacity:.2;pointer-events:none}
+.fb{min-height:26px;margin:14px 0 4px;font-weight:600;text-align:center}
+.fb.ok{background:none!important;animation:fade .4s;color:#86efac}.fb.bad{background:none!important;animation:fade .4s;color:#fca5a5}
+#owl{width:84px;height:84px;animation:float 3s ease-in-out infinite;transform-origin:50% 90%;transition:transform .3s}
+#owl.happy{animation:jump .7s}#owl.sad{animation:droop .7s}
+#owl.think{animation:none;transform:rotate(-10deg)}
+.pupil{transition:transform .3s}#owl.think .pupil{transform:translate(3px,-3px)}
+.cheek{opacity:0;transition:opacity .3s}#owl.happy .cheek{opacity:.85}
+#owl.happy .wing{animation:pop .3s 3}
+.bubble{background:#fff;color:#1e1b4b;border-radius:16px;padding:8px 14px;font-weight:600;font-size:.95rem;animation:fade .4s;position:relative}
+.cf{position:fixed;top:-16px;width:10px;height:14px;z-index:50;pointer-events:none;animation:cfall var(--d) ease-in forwards}
+.star{display:inline-block;font-size:3.2rem;opacity:0;animation:starin .7s forwards}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important;transition:none!important}}
+</style>
+</head>
+<body data-t="space">
+<div id="bg"></div>
+<main class="relative z-10 mx-auto flex min-h-screen max-w-xl flex-col gap-4 px-4 py-5">
+  <header id="hud" class="hidden glass !py-3">
+    <div class="mb-2 flex items-center justify-between text-sm font-semibold">
+      <span id="hname"></span><span id="hscore"></span>
+    </div>
+    <div class="pbar"><div id="pf"></div></div>
+  </header>
+  <div class="flex items-center gap-3">
+    <svg id="owl" viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M24 34 L30 12 L44 28Z M76 34 L70 12 L56 28Z" fill="var(--a)"/>
+      <ellipse cx="50" cy="56" rx="32" ry="34" fill="var(--a)"/>
+      <ellipse class="wing" cx="19" cy="64" rx="8" ry="19" fill="var(--b)" style="transform-origin:19px 50px"/>
+      <ellipse class="wing" cx="81" cy="64" rx="8" ry="19" fill="var(--b)" style="transform-origin:81px 50px"/>
+      <ellipse cx="50" cy="68" rx="20" ry="21" fill="#fff" opacity=".88"/>
+      <circle cx="37" cy="46" r="11" fill="#fff"/><circle cx="63" cy="46" r="11" fill="#fff"/>
+      <circle class="pupil" cx="37" cy="47" r="5.5" fill="#111"/><circle class="pupil" cx="63" cy="47" r="5.5" fill="#111"/>
+      <circle cx="39" cy="45" r="1.8" fill="#fff"/><circle cx="65" cy="45" r="1.8" fill="#fff"/>
+      <path d="M44 55 L56 55 L50 65Z" fill="#fbbf24"/>
+      <circle class="cheek" cx="25" cy="58" r="4.5" fill="#fb7185"/><circle class="cheek" cx="75" cy="58" r="4.5" fill="#fb7185"/>
+      <rect x="33" y="84" width="34" height="13" rx="2" fill="#f8fafc"/><path d="M50 84V97" stroke="#94a3b8" stroke-width="1.5"/>
+      <ellipse cx="40" cy="97" rx="6" ry="3" fill="#f59e0b"/><ellipse cx="60" cy="97" rx="6" ry="3" fill="#f59e0b"/>
+    </svg>
+    <div class="bubble" id="say">Hoot! Pick a story to begin.</div>
+  </div>
+  <section id="screen" class="flex-1"></section>
+</main>
+
+<script>
+var DATA = {
+  space:{name:"Space Exploration",icon:"🚀",blurb:"Rockets, moons and silent footprints",
+    lines:["Astronauts travel to space in rockets.",
+      "To escape Earth’s pull, a rocket must fly about 28,000 kilometers per hour.",
+      "The Moon has no air, so astronauts wear special suits to breathe.",
+      "Their footprints stay there for years because there is no wind to blow them away."],
+    qs:[{t:"mc",q:"Why do astronauts wear special suits on the Moon?",o:["There is no air to breathe","It is too crowded","The suits look cool"],a:0,s:2},
+      {t:"sort",x:"Footprints last on the Moon because there is no ___ to blow them ___.",w:["wind","away","rain","closer"],a:["wind","away"],s:3},
+      {t:"tf",q:"A rocket can leave Earth by flying very slowly.",a:false,s:1},
+      {t:"mc",q:"About how fast must a rocket fly to escape Earth?",o:["28 km per hour","28,000 km per hour","280 km per hour"],a:1,s:1}]},
+  ocean:{name:"Deep Ocean Mystery",icon:"🐙",blurb:"Dark water and glowing creatures",
+    lines:["Far below the waves, the deep ocean is dark and cold.",
+      "Sunlight cannot reach deeper than about 1,000 meters.",
+      "Some animals make their own light, called bioluminescence, to find food and friends.",
+      "The anglerfish dangles a glowing lure to bring tiny fish right to its mouth."],
+    qs:[{t:"mc",q:"What does the anglerfish use to attract tiny fish?",o:["A loud song","A glowing lure","A bright shell"],a:1,s:3},
+      {t:"sort",x:"Some animals make their own ___ to find ___ and friends.",w:["light","food","sound","sand"],a:["light","food"],s:2},
+      {t:"tf",q:"Sunlight reaches the bottom of the deep ocean.",a:false,s:1},
+      {t:"mc",q:"What is making your own light called?",o:["Evaporation","Photosynthesis","Bioluminescence"],a:2,s:2}]},
+  forest:{name:"The Ancient Rainforest",icon:"🦜",blurb:"Four layers of green, wet life",
+    lines:["The ancient rainforest has four layers.",
+      "Tall emergent trees poke above the canopy, where most animals live.",
+      "Below it, the understory is dim and green, and the forest floor is dark.",
+      "Fallen leaves rot quickly in the warm, wet air and feed the soil."],
+    qs:[{t:"mc",q:"Where do most rainforest animals live?",o:["The canopy","The forest floor","Under the soil"],a:0,s:1},
+      {t:"sort",x:"Fallen leaves ___ quickly in the warm, wet air and ___ the soil.",w:["rot","feed","freeze","dry"],a:["rot","feed"],s:3},
+      {t:"tf",q:"The forest floor is bright and sunny.",a:false,s:2},
+      {t:"mc",q:"How many layers does the rainforest have?",o:["Two","Three","Four"],a:2,s:0}]}
+};
+var LV = {easy:{n:"Cadet",pts:10,time:12},medium:{n:"Explorer",pts:15,time:8},hard:{n:"Captain",pts:20,time:5}};
+var S = {topic:"space",lv:"easy",i:0,score:0,right:0,tm:null};
+var $ = function(s){return document.querySelector(s)};
+var scr = $("#screen");
+function T(){return DATA[S.topic]}
+function show(html,cls){scr.innerHTML='<div class="'+(cls||"slide-in")+'">'+html+'</div>'}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function words(t){return t.split(" ").map(function(w){return '<span class="w">'+w+'</span>'}).join(" ")}
+
+function mood(m,msg){
+  var o=$("#owl"); o.setAttribute("class",m||"");
+  if(msg) $("#say").textContent=msg;
+  if(m==="happy"||m==="sad") setTimeout(function(){o.setAttribute("class","")},1300);
+}
+function decorate(t){
+  var bg=$("#bg"); bg.innerHTML=""; document.body.dataset.t=t;
+  var n=t==="space"?44:t==="ocean"?20:14;
+  for(var k=0;k<n;k++){
+    var d=document.createElement("div"); d.className="d "+t;
+    var sz=t==="space"?2+Math.random()*3:t==="ocean"?8+Math.random()*26:0;
+    d.style.left=Math.random()*100+"%";
+    if(t==="space"){d.style.top=Math.random()*100+"%";d.style.width=d.style.height=sz+"px";d.style.setProperty("--t",(1.5+Math.random()*3)+"s")}
+    if(t==="ocean"){d.style.width=d.style.height=sz+"px";d.style.setProperty("--t",(7+Math.random()*9)+"s");d.style.animationDelay=-Math.random()*12+"s"}
+    if(t==="forest"){d.style.setProperty("--t",(8+Math.random()*8)+"s");d.style.animationDelay=-Math.random()*14+"s"}
+    bg.appendChild(d);
+  }
+}
+function hud(zap){
+  $("#hud").classList.remove("hidden");
+  $("#hname").textContent=T().icon+" "+T().name+" · "+LV[S.lv].n;
+  $("#hscore").textContent="⭐ "+S.score;
+  var pf=$("#pf"); pf.style.width=(S.i/T().qs.length*100)+"%";
+  if(zap){pf.classList.remove("zap");void pf.offsetWidth;pf.classList.add("zap")}
+}
+function confetti(n){
+  var c=["#fde047","#f472b6","#38bdf8","#4ade80","#fb923c","#c084fc"];
+  for(var k=0;k<n;k++){
+    var e=document.createElement("i"); e.className="cf";
+    e.style.left=Math.random()*100+"%"; e.style.background=c[k%c.length];
+    e.style.setProperty("--x",(Math.random()*200-100)+"px");
+    e.style.setProperty("--d",(2+Math.random()*2)+"s");
+    e.style.animationDelay=Math.random()*.6+"s";
+    document.body.appendChild(e); (function(x){setTimeout(function(){x.remove()},4800)})(e);
+  }
+}
+
+function welcome(){
+  clearTimeout(S.tm); $("#hud").classList.add("hidden");
+  decorate(S.topic); mood("","Hoot! Pick a story and a level.");
+  var tc=Object.keys(DATA).map(function(k){var d=DATA[k];
+    return '<button class="btn tcard opt '+(k===S.topic?"sel":"")+'" data-topic="'+k+'"><span style="font-size:2rem">'+d.icon+'</span><span><b>'+d.name+'</b><small>'+d.blurb+'</small></span></button>'}).join("");
+  var lv=Object.keys(LV).map(function(k){
+    return '<button class="btn flex-1 '+(k===S.lv?"sel":"")+'" data-lv="'+k+'">'+LV[k].n+'</button>'}).join("");
+  show('<div class="glass"><h1 class="mb-1 text-3xl font-bold">Story Quest</h1><p class="mb-4 opacity-90">Read the story, then prove what you know.</p>'+
+    '<div class="mb-4 grid gap-2">'+tc+'</div><p class="mb-2 font-semibold">Choose your level</p><div class="mb-5 flex gap-2">'+lv+'</div>'+
+    '<button class="btn go" id="start">Start reading</button></div>');
+  scr.querySelectorAll("[data-topic]").forEach(function(b){b.onclick=function(){S.topic=b.dataset.topic;welcome()}});
+  scr.querySelectorAll("[data-lv]").forEach(function(b){b.onclick=function(){S.lv=b.dataset.lv;welcome()}});
+  $("#start").onclick=function(){S.i=0;S.score=0;S.right=0;reading()};
+}
+
+function reading(){
+  decorate(S.topic); hud(); mood("","Read along. Hover over words!");
+  var L=T().lines.map(function(l,k){return '<p class="line" style="animation-delay:'+(k*1.1)+'s">'+words(l)+'</p>'}).join("");
+  show('<div class="glass"><h2 class="mb-3 text-2xl font-bold">'+T().icon+' '+T().name+'</h2>'+L+
+    '<button class="btn go mt-3" id="ready" style="opacity:0;animation:fade .6s forwards;animation-delay:'+(T().lines.length*1.1)+'s">I’m ready for questions</button></div>');
+  $("#ready").onclick=function(){S.i=0;renderQ()};
+}
+
+function panel(s){
+  if(S.lv==="hard") return "";
+  return '<details class="panel glass !p-3" '+(S.lv==="easy"?"open":"")+'><summary>📖 Story'+(S.lv==="easy"?" (clue highlighted)":"")+'</summary>'+
+    T().lines.map(function(l,k){return '<p class="'+(S.lv==="easy"&&k===s?"hl":"")+'">'+l+'</p>'}).join("")+'</details>';
+}
+
+function renderQ(){
+  clearTimeout(S.tm);
+  var q=T().qs[S.i], n=T().qs.length, body="", label="";
+  hud(); mood("","Question "+(S.i+1)+" of "+n+". You can do it!");
+  if(q.t==="mc"){label="Multiple choice";
+    body='<div class="grid gap-3">'+q.o.map(function(o,k){return '<button class="btn opt" data-k="'+k+'">'+o+'</button>'}).join("")+'</div>'}
+  if(q.t==="tf"){label="True or false speed round ⚡";
+    body='<div class="tbar"><i id="tb"></i></div><div class="flex gap-3"><button class="btn flex-1" data-v="1">✔ True</button><button class="btn flex-1" data-v="0">✘ False</button></div>'}
+  if(q.t==="sort"){label="Drag the words into the sentence";
+    body='<p class="sent" id="sent"></p><div id="bank" class="mt-3 flex flex-wrap justify-center gap-2"></div><button class="btn go mt-4" id="chk" disabled>Check my sentence</button>'}
+  show(panel(q.s)+'<div class="glass"><p class="mb-1 text-sm opacity-80">'+label+'</p>'+
+    '<h2 class="mb-4 text-xl font-semibold">'+(q.q||"Complete the sentence from the story.")+'</h2>'+body+
+    '<div class="fb" id="fb"></div><button class="btn go hidden" id="nx">'+(S.i===n-1?"See my results":"Next question")+'</button></div>');
+  $("#nx").onclick=function(){S.i++;S.i>=n?results():renderQ()};
+  if(q.t==="mc") initMC(q); if(q.t==="tf") initTF(q); if(q.t==="sort") initSort(q);
+}
+
+function finishQ(ok,msg){
+  clearTimeout(S.tm);
+  if(ok){S.score+=LV[S.lv].pts;S.right++;mood("happy",["Hooray!","Brilliant!","You nailed it!"][S.i%3])}
+  else mood("sad","Good try! Now you know.");
+  var fb=$("#fb"); fb.textContent=msg; fb.className="fb "+(ok?"ok":"bad");
+  $("#nx").classList.remove("hidden");
+  S.i++; hud(true); S.i--;
+  if(ok) confetti(14);
+}
+
+function initMC(q){
+  var bs=scr.querySelectorAll("[data-k]");
+  bs.forEach(function(b){b.onclick=function(){
+    bs.forEach(function(x){x.disabled=true}); mood("think");
+    var k=+b.dataset.k;
+    setTimeout(function(){
+      var ok=k===q.a;
+      b.classList.add(ok?"ok":"bad");
+      if(!ok) bs[q.a].classList.add("ok");
+      finishQ(ok,ok?"+"+LV[S.lv].pts+" points!":"The answer: "+q.o[q.a]);
+    },380);
+  }});
+}
+
+function initTF(q){
+  var bs=scr.querySelectorAll("[data-v]"), tb=$("#tb"), done=false, secs=LV[S.lv].time;
+  tb.style.transition="width "+secs+"s linear";
+  requestAnimationFrame(function(){requestAnimationFrame(function(){tb.style.width="0%"})});
+  function end(ok,msg,pick){
+    if(done) return; done=true;
+    bs.forEach(function(x){x.disabled=true});
+    var right=bs[q.a?0:1]; right.classList.add("ok");
+    if(pick&&!ok) pick.classList.add("bad");
+    tb.style.transition="none";
+    finishQ(ok,msg);
+  }
+  bs.forEach(function(b){b.onclick=function(){mood("think");var ok=(b.dataset.v==="1")===q.a;end(ok,ok?"+"+LV[S.lv].pts+" points!":"It was "+(q.a?"true":"false")+".",b)}});
+  S.tm=setTimeout(function(){end(false,"Time’s up! It was "+(q.a?"true":"false")+".")},secs*1000);
+}
+
+function initSort(q){
+  var chips=shuffle(q.w), fill=q.a.map(function(){return null}), locked=false;
+  var parts=q.x.split("___");
+  function draw(){
+    $("#sent").innerHTML=parts.map(function(p,k){
+      if(k===parts.length-1) return p;
+      var f=fill[k];
+      return p+'<span class="slot'+(f!==null?" full":"")+'" data-s="'+k+'">'+(f!==null?chips[f]:"")+'</span>';
+    }).join("");
+    $("#bank").innerHTML=chips.map(function(w,k){
+      return fill.indexOf(k)>-1?'<span class="btn chip used">'+w+'</span>':'<button class="btn chip" draggable="true" data-c="'+k+'">'+w+'</button>';
+    }).join("");
+    $("#chk").disabled=locked||fill.indexOf(null)>-1;
+    if(locked) return;
+    scr.querySelectorAll("[data-c]").forEach(function(c){
+      c.onclick=function(){var e=fill.indexOf(null);if(e>-1){fill[e]=+c.dataset.c;mood("think");draw()}};
+      c.ondragstart=function(ev){ev.dataTransfer.setData("text",c.dataset.c)};
+    });
+    scr.querySelectorAll("[data-s]").forEach(function(s){
+      s.ondragover=function(ev){ev.preventDefault();s.style.background="rgba(255,255,255,.35)"};
+      s.ondragleave=function(){s.style.background=""};
+      s.ondrop=function(ev){ev.preventDefault();var c=+ev.dataTransfer.getData("text");
+        var o=fill.indexOf(c);if(o>-1)fill[o]=null;fill[+s.dataset.s]=c;mood("think");draw()};
+      s.onclick=function(){fill[+s.dataset.s]=null;draw()};
+    });
+  }
+  draw();
+  $("#chk").onclick=function(){
+    locked=true; var all=true;
+    scr.querySelectorAll("[data-s]").forEach(function(s,k){
+      var good=chips[fill[k]]===q.a[k]; if(!good) all=false;
+      s.classList.add(good?"ok":"bad"); s.style.background="";
+    });
+    $("#chk").disabled=true;
+    finishQ(all,all?"+"+LV[S.lv].pts+" points!":"Look at the highlighted story line and try the next one!");
+  };
+}
+
+function results(){
+  clearTimeout(S.tm); S.i=T().qs.length; hud(true);
+  var n=T().qs.length, max=n*LV[S.lv].pts, pct=S.score/max;
+  var st=pct>=.9?3:pct>=.6?2:1;
+  var stars=""; for(var k=0;k<3;k++) stars+='<span class="star" style="animation-delay:'+(.4+k*.45)+'s;'+(k<st?"":"filter:grayscale(1);opacity:.25!important")+'">⭐</span>';
+  mood("happy",st===3?"Reading champion!":st===2?"Great job, explorer!":"Nice start! Try again.");
+  show('<div class="glass text-center"><h2 class="text-3xl font-bold">Level complete!</h2><div class="my-3">'+stars+'</div>'+
+    '<p class="text-5xl font-bold">'+S.score+'<span class="text-xl opacity-70"> / '+max+'</span></p>'+
+    '<p class="mt-2 mb-5 opacity-90">'+S.right+' of '+n+' answers correct</p>'+
+    '<div class="grid gap-3"><button class="btn go" id="again">Play again</button><button class="btn opt" id="menu">Choose another story</button></div></div>',"up-in");
+  setTimeout(function(){confetti(st*22)},300);
+  $("#again").onclick=function(){S.i=0;S.score=0;S.right=0;reading()};
+  $("#menu").onclick=welcome;
+}
+
+welcome();
+</script>
+</body>
+</html>

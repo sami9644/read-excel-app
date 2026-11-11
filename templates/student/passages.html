@@ -1,0 +1,261 @@
+{% extends 'student/dash.html' %}
+{% block content %}
+
+<!-- Header Section -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+    <div>
+        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Available Reading Passages</h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">Select a passage to practice your reading skills, listen with TTS, or take a comprehension quiz.</p>
+    </div>
+    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold self-start sm:self-auto">
+        <i class="fa-solid fa-layer-group"></i>
+        Passage Library
+    </div>
+</div>
+
+{% if passages %}
+<!-- Slider Wrapper -->
+<div class="relative mt-6 max-w-4xl mx-auto">
+    
+    <!-- Slider Container -->
+    <div id="slider-container" class="overflow-hidden rounded-3xl">
+        <div id="slider-track" class="flex transition-transform duration-300 ease-out">
+            {% for passage in passages %}
+            <div class="w-full flex-shrink-0 px-1">
+                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-md p-6 sm:p-8 space-y-6 passage-card" id="passage-card-{{ passage.passage_id }}">
+                    
+                    <!-- Top Row: Title & CEFR Badge -->
+                    <div class="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-base shrink-0">
+                                <i class="fa-solid fa-book-open"></i>
+                            </div>
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-950 tracking-tight passage-title">
+                                {{ passage.title }}
+                            </h2>
+                        </div>
+                        
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            <i class="fa-solid fa-graduation-cap"></i>
+                            Level {{ passage.CEFR }}
+                        </span>
+                    </div>
+
+                    <!-- Passage Text Content -->
+                    <div class="bg-slate-50/80 border border-slate-100 p-5 sm:p-6 rounded-2xl max-h-72 overflow-y-auto">
+                        <p class="text-slate-700 text-sm sm:text-base leading-relaxed whitespace-pre-line font-normal passage-text">
+                            {{ passage.passage }}
+                        </p>
+                    </div>
+
+                    <!-- Action Links -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-2">
+                        <!-- TTS Listen Button -->
+                        <button type="button" 
+                                onclick="toggleSpeech('{{ passage.passage_id }}')" 
+                                id="tts-btn-{{ passage.passage_id }}"
+                                class="tts-btn inline-flex items-center justify-center px-5 py-3 rounded-xl font-bold text-xs sm:text-sm text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-all text-center cursor-pointer">
+                            <i class="fa-solid fa-volume-high mr-2 text-emerald-600 tts-icon"></i>
+                            <span class="tts-label">Listen</span>
+                        </button>
+
+                        <a href="/student/fillquiz/{{passage.passage_id}}" class="inline-flex items-center justify-center px-5 py-3 rounded-xl font-bold text-xs sm:text-sm text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 transition-colors text-center border border-slate-200/60">
+                            <i class="fa-solid fa-clipboard-question mr-2 text-brand-600"></i>
+                            Answer questions
+                        </a>
+                        
+                        <a href="/student/read/{{passage.passage_id}}" class="inline-flex items-center justify-center px-5 py-3 rounded-xl font-bold text-xs sm:text-sm text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-500/20 hover:shadow-lg transition-all text-center">
+                            <i class="fa-solid fa-microphone-lines mr-2"></i>
+                            Submit reading
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Slider Navigation Controls -->
+    <div class="flex items-center justify-between mt-6 px-2">
+        <button type="button" id="prev-btn" onclick="prevSlide()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs sm:text-sm hover:bg-slate-50 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-chevron-left"></i> Previous
+        </button>
+
+        <!-- Slide Indicators / Pagination -->
+        <div id="slider-dots" class="flex items-center gap-1.5">
+            {% for passage in passages %}
+            <button type="button" onclick="goToSlide('{{ loop.index0 }}')" class="dot-indicator w-2.5 h-2.5 rounded-full transition-all {{ 'bg-brand-600 w-6' if loop.first else 'bg-slate-300' }}" aria-label="Slide {{ loop.index }}"></button>
+            {% endfor %}
+        </div>
+
+        <button type="button" id="next-btn" onclick="nextSlide()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs sm:text-sm hover:bg-slate-50 transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+            Next <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+
+</div>
+
+{% else %}
+<!-- Empty State Fallback -->
+<div class="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300 p-8 space-y-4 mt-6">
+    <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center text-2xl mx-auto">
+        <i class="fa-solid fa-folder-open"></i>
+    </div>
+    <h3 class="text-lg font-bold text-slate-800">No Passages Available Yet</h3>
+    <p class="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
+        There are currently no reading passages available for your level. Please check back later or update your profile level.
+    </p>
+</div>
+{% endif %}
+
+<!-- Slider & Text-to-Speech Scripts -->
+<script>
+    let currentIndex = 0;
+    const totalSlides = {{ passages | length if passages else 0 }};
+
+    function updateSlider() {
+        const track = document.getElementById('slider-track');
+        if (!track) return;
+        track.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+        // Update Dots
+        const dots = document.querySelectorAll('.dot-indicator');
+        dots.forEach((dot, idx) => {
+            if (idx === currentIndex) {
+                dot.className = "dot-indicator w-6 h-2.5 rounded-full bg-brand-600 transition-all";
+            } else {
+                dot.className = "dot-indicator w-2.5 h-2.5 rounded-full bg-slate-300 transition-all";
+            }
+        });
+
+        // Update Button States
+        document.getElementById('prev-btn').disabled = currentIndex === 0;
+        document.getElementById('next-btn').disabled = currentIndex === totalSlides - 1;
+    }
+
+    function nextSlide() {
+        if (currentIndex < totalSlides - 1) {
+            currentIndex++;
+            updateSlider();
+            window.speechSynthesis.cancel(); // Stop TTS if changing slides
+        }
+    }
+
+    function prevSlide() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            updateSlider();
+            window.speechSynthesis.cancel();
+        }
+    }
+
+    function goToSlide(index) {
+        currentIndex = parseInt(index);
+        updateSlider();
+        window.speechSynthesis.cancel();
+    }
+
+    // Swipe Support for Mobile Touch Devices
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    const trackElement = document.getElementById('slider-track');
+    if (trackElement) {
+        trackElement.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        trackElement.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, {passive: true});
+    }
+
+    function handleSwipe() {
+        const threshold = 50;
+        if (touchEndX < touchStartX - threshold) {
+            nextSlide();
+        }
+        if (touchEndX > touchStartX + threshold) {
+            prevSlide();
+        }
+    }
+
+    // Initial button state setup
+    if (totalSlides > 0) {
+        updateSlider();
+    }
+
+    // Text to Speech Logic
+    let currentSpeechId = null;
+
+    function toggleSpeech(passageId) {
+        if (!('speechSynthesis' in window)) {
+            alert('Sorry, your browser does not support text-to-speech!');
+            return;
+        }
+
+        const btn = document.getElementById(`tts-btn-${passageId}`);
+        const icon = btn.querySelector('.tts-icon');
+        const label = btn.querySelector('.tts-label');
+
+        if (currentSpeechId === passageId && window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            resetTTSButton(passageId);
+            currentSpeechId = null;
+            return;
+        }
+
+        if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+            if (currentSpeechId) {
+                resetTTSButton(currentSpeechId);
+            }
+        }
+
+        const card = document.getElementById(`passage-card-${passageId}`);
+        const titleText = card.querySelector('.passage-title').innerText.trim();
+        const passageText = card.querySelector('.passage-text').innerText.trim();
+
+        const textToRead = `${titleText}. ${passageText}`;
+        const utterance = new SpeechSynthesisUtterance(textToRead);
+
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+
+        utterance.onstart = function () {
+            currentSpeechId = passageId;
+            btn.classList.remove('bg-emerald-50', 'hover:bg-emerald-100', 'text-emerald-800', 'border-emerald-200');
+            btn.classList.add('bg-rose-50', 'hover:bg-rose-100', 'text-rose-700', 'border-rose-300', 'animate-pulse');
+            icon.className = 'fa-solid fa-square mr-2 text-rose-600 tts-icon';
+            label.innerText = 'Stop';
+        };
+
+        utterance.onend = function () {
+            resetTTSButton(passageId);
+            currentSpeechId = null;
+        };
+
+        utterance.onerror = function () {
+            resetTTSButton(passageId);
+            currentSpeechId = null;
+        };
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function resetTTSButton(passageId) {
+        const btn = document.getElementById(`tts-btn-${passageId}`);
+        if (!btn) return;
+        const icon = btn.querySelector('.tts-icon');
+        const label = btn.querySelector('.tts-label');
+
+        btn.classList.remove('bg-rose-50', 'hover:bg-rose-100', 'text-rose-700', 'border-rose-300', 'animate-pulse');
+        btn.classList.add('bg-emerald-50', 'hover:bg-emerald-100', 'text-emerald-800', 'border-emerald-200');
+        icon.className = 'fa-solid fa-volume-high mr-2 text-emerald-600 tts-icon';
+        label.innerText = 'Listen';
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReadExcel - Master Reading Skills with AI Feedback</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:scale-105 transition-transform duration-300">
+                        <i class="fa-solid me-0.5 fa-book-open-reader text-xl"></i>
+                    </div>
+                    <span class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-700 to-indigo-600 tracking-tight">ReadExcel</span>
+                </a>
+
+                <!-- Desktop Nav Menu -->
+                <div class="hidden md:flex items-center space-x-8 font-medium">
+                    <a href="#" class="text-slate-600 hover:text-brand-600 transition-colors">Home</a>
+                    <a href="#about" class="text-slate-600 hover:text-brand-600 transition-colors">About</a>
+                    <a href="#pricing" class="text-slate-600 hover:text-brand-600 transition-colors">Pricing</a>
+                    <a href="#contact" class="text-slate-600 hover:text-brand-600 transition-colors">Contact</a>
+                </div>
+
+                <!-- Action Button -->
+                <div class="hidden md:flex items-center">
+                    <a href="/student" class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-md shadow-brand-500/20 hover:shadow-lg hover:shadow-brand-500/30 transition-all duration-300 transform hover:-translate-y-0.5">
+                        Get Started
+                        <i class="fa-solid fa-arrow-right ml-2 text-xs"></i>
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" type="button" class="p-2 rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-none" aria-label="Toggle Menu">
+                        <i class="fa-solid fa-bars text-2xl" id="menu-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-6 space-y-3">
+            <a href="#" class="block py-2 text-slate-600 hover:text-brand-600 font-medium">Home</a>
+            <a href="#about" class="block py-2 text-slate-600 hover:text-brand-600 font-medium">About</a>
+            <a href="#pricing" class="block py-2 text-slate-600 hover:text-brand-600 font-medium">Pricing</a>
+            <a href="#contact" class="block py-2 text-slate-600 hover:text-brand-600 font-medium">Contact</a>
+            <a href="/student" class="block w-full text-center py-3 mt-2 rounded-xl font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-md">
+                Get Started
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative overflow-hidden py-20 lg:py-28 bg-gradient-to-b from-white to-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                
+                <!-- Left Hero Content -->
+                <div class="lg:col-span-7 space-y-8 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-sm font-semibold">
+                        <span class="flex h-2 w-2 rounded-full bg-brand-600"></span>
+                        Interactive Audio-Based Reading Practice
+                    </div>
+                    
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-tight">
+                        Transform Your Reading <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-600">Fluency & Confidence</span>
+                    </h1>
+                    
+                    <p class="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+                        Practice reading passages out loud, submit your voice audio, and receive instant personalized analysis on your pronunciation, pace, and accuracy.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                        <a href="/student" class="w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/30 hover:shadow-xl hover:shadow-brand-500/40 transition-all duration-300 transform hover:-translate-y-0.5 text-center">
+                            Start Practicing Now
+                        </a>
+                        <a href="#about" class="w-full sm:w-auto px-8 py-4 rounded-xl font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 shadow-sm transition-all duration-300 text-center">
+                            Learn How It Works
+                        </a>
+                    </div>
+
+                    <!-- Highlight Stats -->
+                    <div class="pt-8 border-t border-slate-200 grid grid-cols-3 gap-4 max-w-lg mx-auto lg:mx-0">
+                        <div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900">100+</div>
+                            <div class="text-xs sm:text-sm text-slate-500">Curated Passages</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900">Instant</div>
+                            <div class="text-xs sm:text-sm text-slate-500">Audio Feedback</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900">100%</div>
+                            <div class="text-xs sm:text-sm text-slate-500">Self-Paced Learning</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Visual Mockup -->
+                <div class="lg:col-span-5">
+                    <div class="relative mx-auto max-w-md lg:max-w-none">
+                        <!-- Decorative Glow -->
+                        <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-brand-600 to-indigo-500 opacity-30 blur-2xl"></div>
+                        
+                        <!-- UI Card Box -->
+                        <div class="relative bg-white border border-slate-200/80 rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6">
+                            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center font-bold text-sm">
+                                        P1
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-800 text-sm">The Great Explorer</h4>
+                                        <p class="text-xs text-slate-500">Level: Intermediate</p>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                    Ready to Record
+                                </span>
+                            </div>
+
+                            <p class="text-sm text-slate-600 italic bg-slate-50 p-4 rounded-xl border border-slate-100 leading-relaxed">
+                                "The morning mist cleared slowly over the valley, revealing ancient paths that had remained untouched for centuries..."
+                            </p>
+
+                            <!-- Audio Submission Demo Waveform -->
+                            <div class="bg-brand-50 border border-brand-100 p-4 rounded-xl space-y-3">
+                                <div class="flex items-center justify-between text-xs text-brand-700 font-semibold">
+                                    <span class="flex items-center gap-2">
+                                        <i class="fa-solid fa-microphone text-brand-600 animate-pulse"></i>
+                                        Audio Recording...
+                                    </span>
+                                    <span>00:42 / 01:30</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-1 h-8">
+                                    <div class="w-1.5 h-4 bg-brand-400 rounded-full animate-bounce"></div>
+                                    <div class="w-1.5 h-7 bg-brand-600 rounded-full"></div>
+                                    <div class="w-1.5 h-3 bg-brand-300 rounded-full"></div>
+                                    <div class="w-1.5 h-8 bg-brand-600 rounded-full animate-bounce"></div>
+                                    <div class="w-1.5 h-5 bg-brand-500 rounded-full"></div>
+                                    <div class="w-1.5 h-2 bg-brand-300 rounded-full"></div>
+                                    <div class="w-1.5 h-6 bg-brand-600 rounded-full"></div>
+                                    <div class="w-1.5 h-4 bg-brand-400 rounded-full"></div>
+                                    <div class="w-1.5 h-8 bg-brand-600 rounded-full animate-bounce"></div>
+                                    <div class="w-1.5 h-3 bg-brand-300 rounded-full"></div>
+                                </div>
+                            </div>
+
+                            <a href="/student" class="block w-full py-3 text-center bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-sm transition-colors shadow">
+                                Submit Audio Recording
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto space-y-4">
+                <h2 class="text-xs font-bold tracking-widest text-brand-600 uppercase">About ReadExcel</h2>
+                <p class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Designed to elevate reading comprehension and pronunciation</p>
+                <p class="text-slate-600 text-base sm:text-lg">
+                    Our platform simplifies reading practice into an engaging step-by-step interactive routine.
+                </p>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-brand-200 hover:shadow-xl transition-all duration-300 space-y-4">
+                    <div class="w-12 h-12 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Curated Passages</h3>
+                    <p class="text-slate-600 leading-relaxed text-sm">
+                        Access a diverse library of rich reading passages tailored across varying difficulty levels and topics.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-brand-200 hover:shadow-xl transition-all duration-300 space-y-4">
+                    <div class="w-12 h-12 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-microphone-lines"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Audio Recording</h3>
+                    <p class="text-slate-600 leading-relaxed text-sm">
+                        Read aloud and record your voice seamlessly directly inside the student portal for every passage.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-brand-200 hover:shadow-xl transition-all duration-300 space-y-4">
+                    <div class="w-12 h-12 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900">Progress Tracking</h3>
+                    <p class="text-slate-600 leading-relaxed text-sm">
+                        Receive detailed feedback on accuracy, pace, and track your overall improvements over time.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 bg-slate-50 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto space-y-4">
+                <h2 class="text-xs font-bold tracking-widest text-brand-600 uppercase">Simple & Transparent Pricing</h2>
+                <p class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Invest in Your Reading Growth</p>
+                <p class="text-slate-600 text-base sm:text-lg">Get full, unrestricted access to all features with our affordable plan.</p>
+            </div>
+
+            <div class="mt-12 max-w-md mx-auto">
+                <div class="relative bg-white rounded-3xl border-2 border-brand-500 shadow-2xl p-8 space-y-8">
+                    <!-- Badge -->
+                    <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-brand-600 text-white text-xs font-bold tracking-wider uppercase px-4 py-1.5 rounded-full shadow">
+                        All-Inclusive Membership
+                    </div>
+
+                    <div class="text-center space-y-2 pt-2">
+                        <h3 class="text-2xl font-bold text-slate-900">Student Practice Pass</h3>
+                        <div class="flex items-baseline justify-center gap-1">
+                            <span class="text-xl font-bold text-slate-600">ETB</span>
+                            <span class="text-5xl font-black text-slate-900">500</span>
+                            <span class="text-slate-500 font-medium">/ month</span>
+                        </div>
+                    </div>
+
+                    <!-- Privileges List -->
+                    <ul class="space-y-4 text-sm text-slate-700 border-t border-b border-slate-100 py-6">
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-circle-check text-emerald-500 text-lg mt-0.5"></i>
+                            <span><strong>Full Passages Library:</strong> Access to all curated reading passages across all levels.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-circle-check text-emerald-500 text-lg mt-0.5"></i>
+                            <span><strong>Audio Submission:</strong> Record & submit voice recordings for practice feedback.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-circle-check text-emerald-500 text-lg mt-0.5"></i>
+                            <span><strong>Unlimited Practice:</strong> Unlimited audio recordings and retakes per passage.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-circle-check text-emerald-500 text-lg mt-0.5"></i>
+                            <span><strong>Progress Analytics:</strong> Track reading fluency and score improvements over time.</span>
+                        </li>
+                    </ul>
+
+                    <a href="/student" class="block w-full py-4 text-center font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-lg shadow-brand-500/30 hover:shadow-xl transition-all duration-300">
+                        Subscribe & Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Location & Contact Section -->
+    <section id="contact" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
+                <h2 class="text-xs font-bold tracking-widest text-brand-600 uppercase">Get In Touch</h2>
+                <p class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">Visit Us or Send a Message</p>
+                <p class="text-slate-600 text-base sm:text-lg">We are here to assist you on your reading journey.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <!-- Physical Location Info -->
+                <div class="lg:col-span-5 space-y-8">
+                    <div class="bg-slate-50 p-8 rounded-2xl border border-slate-200/80 space-y-6">
+                        <h3 class="text-2xl font-bold text-slate-900">Office Location</h3>
+                        
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-location-dot text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">Physical Address</h4>
+                                <p class="text-slate-600 text-sm mt-1 leading-relaxed">
+                                    Bacha Mall, 2nd Floor<br>
+                                    Gedera, Addis Ababa, Ethiopia
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-lg bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-map-location-dot text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-800">Google Maps</h4>
+                                <a href="https://maps.app.goo.gl/h9ydFidju9bZ5ckBA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm text-brand-600 hover:text-brand-700 font-semibold mt-1 hover:underline">
+                                    Open Location on Google Maps
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-1.5"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Location Map Button Card -->
+                    <div class="bg-gradient-to-br from-brand-700 to-indigo-900 p-8 rounded-2xl text-white space-y-4">
+                        <h4 class="text-xl font-bold">Find Us Easily</h4>
+                        <p class="text-brand-100 text-sm leading-relaxed">
+                            Located centrally at Gedera Bacha Mall on the 2nd Floor. Click below to view directly on maps.
+                        </p>
+                        <a href="https://maps.app.goo.gl/h9ydFidju9bZ5ckBA" target="_blank" rel="noopener noreferrer" class="inline-block px-6 py-3 bg-white text-brand-700 font-bold rounded-xl text-sm shadow hover:bg-slate-100 transition-colors">
+                            <i class="fa-solid fa-location-arrow mr-2"></i> View Map Directions
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Contact Form -->
+                <div class="lg:col-span-7 bg-slate-50 p-8 sm:p-10 rounded-2xl border border-slate-200/80">
+                    <h3 class="text-2xl font-bold text-slate-900 mb-6">Send Us a Message</h3>
+                    
+                    <form id="contact-form" class="space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <label for="name" class="block text-sm font-semibold text-slate-700 mb-2">Your Name</label>
+                                <input type="text" id="name" required placeholder="Abebe Kebede" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white text-sm">
+                            </div>
+                            <div>
+                                <label for="email" class="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
+                                <input type="email" id="email" required placeholder="abebe@example.com" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="subject" class="block text-sm font-semibold text-slate-700 mb-2">Subject</label>
+                            <input type="text" id="subject" required placeholder="Inquiry about practice sessions" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white text-sm">
+                        </div>
+
+                        <div>
+                            <label for="message" class="block text-sm font-semibold text-slate-700 mb-2">Message</label>
+                            <textarea id="message" rows="4" required placeholder="Write your message here..." class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white text-sm resize-none"></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full py-4 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-md transition-all duration-300">
+                            Send Message
+                        </button>
+                        
+                        <!-- Form Response Message Box -->
+                        <div id="form-message" class="hidden p-4 rounded-xl text-sm font-semibold"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-sm">
+                    <i class="fa-solid fa-book-open-reader"></i>
+                </div>
+                <span class="text-white font-bold text-lg">ReadExcel</span>
+            </div>
+            
+            <p class="text-sm text-center md:text-left">
+                &copy; ReadExcel Practice Platform. Bacha Mall 2nd Floor, Gedera, Addis Ababa. All rights reserved.
+            </p>
+
+            <div class="flex space-x-6 text-sm">
+                <a href="#" class="hover:text-white transition-colors">Home</a>
+                <a href="#about" class="hover:text-white transition-colors">About</a>
+                <a href="#pricing" class="hover:text-white transition-colors">Pricing</a>
+                <a href="/student" class="hover:text-white transition-colors">Student Portal</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Interactive JavaScript -->
+    <script>
+        // Toggle Mobile Navigation
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuIcon = document.getElementById('menu-icon');
+
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            if (mobileMenu.classList.contains('hidden')) {
+                menuIcon.classList.remove('fa-xmark');
+                menuIcon.classList.add('fa-bars');
+            } else {
+                menuIcon.classList.remove('fa-bars');
+                menuIcon.classList.add('fa-xmark');
+            }
+        });
+
+        // Contact Form Handling
+        const contactForm = document.getElementById('contact-form');
+        const formMessage = document.getElementById('form-message');
+
+        contactForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            formMessage.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'bg-emerald-50', 'text-emerald-700');
+            formMessage.classList.add('bg-emerald-50', 'text-emerald-700');
+            formMessage.textContent = 'Thank you! Your message has been sent successfully. We will contact you soon.';
+            contactForm.reset();
+        });
+    </script>
+</body>
+</html>

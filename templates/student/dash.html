@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - ReadExcel</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full antialiased text-slate-800 flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Navbar Header -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Brand Logo -->
+                <a href="/student/dashboard" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:scale-105 transition-transform duration-300">
+                        <i class="fa-solid me-0.5 fa-book-open-reader text-xl"></i>
+                    </div>
+                    <span class="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-700 to-indigo-600 tracking-tight">ReadExcel</span>
+                </a>
+
+                <!-- Desktop Navigation Links -->
+                <nav class="hidden md:flex items-center space-x-6 font-semibold text-sm">
+                    <a href="/student/dashboard" class="text-brand-600 bg-brand-50 px-4 py-2 rounded-xl transition-colors">
+                        <i class="fa-solid fa-house mr-1.5"></i>Home
+                    </a>
+                    <a href="/student/passages" class="text-slate-600 hover:text-brand-600 px-3 py-2 rounded-xl transition-colors">
+                        <i class="fa-solid fa-book-open mr-1.5"></i>Access passages
+                    </a>
+                    <a href="/student/game" class="block py-2.5 px-3 rounded-lg text-slate-600 hover:bg-slate-50">
+                        <i class="fa-solid fa-gamepad"></i> Play game
+                    </a>
+                    <button type="button" onclick="openPopUp()" class="text-slate-600 hover:text-brand-600 px-3 py-2 rounded-xl transition-colors text-left font-semibold">
+                        <i class="fa-solid fa-user-pen mr-1.5"></i>Edit CEFR level
+                    </button>
+                    <a href="/student/logout" class="text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-4 py-2 rounded-xl transition-colors font-semibold border border-rose-200/60">
+                        <i class="fa-solid fa-right-from-bracket mr-1.5"></i>Log out
+                    </a>
+                </nav>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" type="button" class="p-2 rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-none" aria-label="Toggle Navigation">
+                        <i class="fa-solid fa-bars text-xl" id="menu-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Nav -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2 font-medium">
+            <a href="/student/dashboard" class="block py-2.5 px-3 rounded-lg bg-brand-50 text-brand-600 font-bold">
+                <i class="fa-solid fa-house mr-2"></i>Home
+            </a>
+            <a href="/student/passages" class="block py-2.5 px-3 rounded-lg text-slate-600 hover:bg-slate-50">
+                <i class="fa-solid fa-book-open mr-2"></i>Access passages
+            </a>
+            <a href="/student/game" class="block py-2.5 px-3 rounded-lg text-slate-600 hover:bg-slate-50">
+                <i class="fa-solid fa-gamepad"></i> Forest readers
+            </a>
+            <a href="/student/game2" class="block py-2.5 px-3 rounded-lg text-slate-600 hover:bg-slate-50">
+                <i class="fa-solid fa-gamepad"></i> Story Quest
+            </a>
+            <button type="button" onclick="openPopUp()" class="w-full text-left block py-2.5 px-3 rounded-lg text-slate-600 hover:bg-slate-50">
+                <i class="fa-solid fa-user-pen mr-2"></i>Edit CEFR level
+            </button>
+            <a href="/student/logout" class="block py-2.5 px-3 rounded-lg text-rose-600 hover:bg-rose-50 font-semibold">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Log out
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {% block content %}
+        <!-- Welcome Header Banner -->
+        <div class="bg-gradient-to-r from-brand-700 via-brand-600 to-indigo-600 rounded-3xl p-8 sm:p-10 text-white shadow-xl shadow-brand-500/10 mb-8 relative overflow-hidden">
+            <div class="relative z-10 space-y-3">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-brand-100 text-xs font-semibold">
+                    <i class="fa-solid fa-circle text-[8px] text-emerald-400"></i> Active Student Workspace
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-black tracking-tight">
+                    Welcome {{ data.fullname }}
+                </h1>
+                <p class="text-brand-100 text-sm sm:text-base max-w-xl">
+                    Select a reading passage to begin your audio practice session or update your target CEFR level from your profile settings.
+                </p>
+            </div>
+            
+            <!-- Decorative Accent -->
+            <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+        </div>
+
+        <!-- Content Placeholder Grid (Ready for dynamic passages/stats insertion) -->
+        <div class="content grid grid-cols-1 gap-6">
+            <!-- Dynamic Backend Content Anchor -->
+        </div>
+    </main>
+
+    <!-- Edit Profile Modal (Popup) -->
+    <div id="edit-profile-popup" class="popup fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative border border-slate-100">
+            
+            <!-- Close Modal Icon -->
+            <button type="button" onclick="closePopUp()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <!-- Popup Header -->
+            <div class="space-y-2">
+                <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-user-gear"></i>
+                </div>
+                <h3 class="text-2xl font-black text-slate-900 tracking-tight">Edit Profile</h3>
+                <p class="text-xs text-slate-500">Your current level {{ data.CEFR}}</p>
+            </div>
+
+            <!-- Form submission targeting /student/changelevel -->
+            <form action="/student/changelevel" method="post" class="space-y-5">
+                
+                <div>
+                    <label for="cefr-select" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        Select New CEFR Level
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-graduation-cap text-sm"></i>
+                        </div>
+                        <select id="cefr-select" name="cefr_level" required onchange="updateCefrExplanation(this.value)" class="w-full pl-10 pr-8 py-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50 appearance-none">
+                            <option value="" disabled selected>Choose CEFR Level</option>
+                            <option value="A1">A1 - Beginner</option>
+                            <option value="A2">A2 - Elementary</option>
+                            <option value="B1">B1 - Intermediate</option>
+                            <option value="B2">B2 - Upper-Intermediate</option>
+                            <option value="C1">C1 - Advanced</option>
+                            <option value="C2">C2 - Proficient</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- CEFR Dynamic Helper Description -->
+                    <div id="modal-cefr-desc" class="mt-3 text-xs p-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 flex items-start gap-2">
+                        <i class="fa-solid fa-circle-info text-brand-600 mt-0.5"></i>
+                        <span id="modal-cefr-desc-text">Select a level above to view its criteria.</span>
+                    </div>
+                </div>
+
+                <!-- Form Action Buttons -->
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="button" onclick="closePopUp()" class="flex-1 py-3 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors text-center">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-1 py-3 text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl shadow-md shadow-brand-500/20 transition-colors text-center">
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+{% endblock %}
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-slate-500 border-t border-slate-200 bg-white fixed bottom-0 inset-x-0 p-4">
+        <p>&copy; ReadExcel Reading Practice Portal. All rights reserved.</p>
+    </footer>
+
+    <!-- Interactive Scripts -->
+    <script>
+        // Modal Control Functions
+        function openPopUp() {
+            document.getElementById('edit-profile-popup').classList.remove('hidden');
+        }
+
+        function closePopUp() {
+            document.getElementById('edit-profile-popup').classList.add('hidden');
+        }
+
+        // CEFR Description Helper
+        const levelDetails = {
+            'A1': 'A1 Level: Short, simple sentences with basic vocabulary for beginners.',
+            'A2': 'A2 Level: Elementary reading passages focusing on routine daily topics.',
+            'B1': 'B1 Level: Intermediate texts with main ideas and straightforward factual content.',
+            'B2': 'B2 Level: Upper-intermediate passages with nuanced context and complex arguments.',
+            'C1': 'C1 Level: Advanced reading material with implicit meanings and dense structures.',
+            'C2': 'C2 Level: Mastery level reading with native-level fluency requirements.'
+        };
+
+        function updateCefrExplanation(val) {
+            const desc = document.getElementById('modal-cefr-desc-text');
+            if (levelDetails[val]) {
+                desc.textContent = levelDetails[val];
+            }
+        }
+
+        // Mobile Nav Drawer Toggle
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileNav = document.getElementById('mobile-menu');
+        const menuIcon = document.getElementById('menu-icon');
+
+        mobileBtn.addEventListener('click', () => {
+            mobileNav.classList.toggle('hidden');
+            if (mobileNav.classList.contains('hidden')) {
+                menuIcon.classList.remove('fa-xmark');
+                menuIcon.classList.add('fa-bars');
+            } else {
+                menuIcon.classList.remove('fa-bars');
+                menuIcon.classList.add('fa-xmark');
+            }
+        });
+    </script>
+</body>
+</html>

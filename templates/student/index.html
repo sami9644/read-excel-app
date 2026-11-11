@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - ReadExcel Authentication</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full antialiased text-slate-800 flex flex-col justify-between selection:bg-brand-500 selection:text-white">
+
+    <!-- Header Navigation Bar -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="/" class="flex items-center gap-3 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform duration-300">
+                        <i class="fa-solid me-0.5 fa-book-open-reader text-lg"></i>
+                    </div>
+                    <span class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-brand-700 to-indigo-600 tracking-tight">ReadExcel</span>
+                </a>
+
+                <!-- Back to Homepage Link -->
+                <a href="/" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-brand-600 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Back to Main Site
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow flex items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
+        <div class="w-full max-w-md space-y-6">
+            
+            <!-- Auth Card -->
+            <div class="bg-white border border-slate-200/80 rounded-3xl shadow-xl overflow-hidden p-6 sm:p-8">
+                
+                <!-- Tab Controls -->
+                <div class="flex bg-slate-100 p-1.5 rounded-2xl mb-8 border border-slate-200/60" role="tablist">
+                    <button id="tab-signin-btn" onclick="switchTab('signin')" class="flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 text-brand-700 bg-white shadow-sm" role="tab" aria-selected="true">
+                        Sign In
+                    </button>
+                    <button id="tab-signup-btn" onclick="switchTab('signup')" class="flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 text-slate-500 hover:text-slate-800" role="tab" aria-selected="false">
+                        Sign Up
+                    </button>
+                </div>
+
+                <!-- FORM 1: SIGN IN -->
+                <div id="signin-view" class="space-y-6">
+                    <div class="text-center space-y-2">
+                        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Welcome Back!</h1>
+                        <p class="text-xs text-slate-500">Sign in to continue your reading practice sessions</p>
+                    </div>
+
+                    <form action="/student/signin" method="POST" class="space-y-4">
+                        <!-- Identifier Input -->
+                        <div>
+                            <label for="signin-identifier" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Phone Number</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-user text-sm"></i>
+                                </div>
+                                <input type="number" id="signin-identifier" name="phone" required placeholder="e.g. +251911234567" class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-slate-50/50">
+                            </div>
+                        </div>
+
+                        <!-- Password Input -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label for="signin-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
+                                <button type="button" onclick="openForgotPasswordModal()" class="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline">
+                                    Forgot Password?
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-lock text-sm"></i>
+                                </div>
+                                <input type="password" id="signin-password" name="password" required placeholder="••••••••" class="w-full pl-10 pr-10 py-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-slate-50/50">
+                                <button type="button" onclick="togglePasswordVisibility('signin-password', 'signin-eye-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                                    <i class="fa-solid fa-eye text-sm" id="signin-eye-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full py-3.5 mt-2 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/30 hover:shadow-xl transition-all duration-300">
+                            Sign In to Portal
+                            <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- FORM 2: SIGN UP -->
+                <div id="signup-view" class="hidden space-y-6">
+                    <div class="text-center space-y-2">
+                        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Create Account</h1>
+                        <p class="text-xs text-slate-500">Join ReadExcel & boost your reading accuracy</p>
+                    </div>
+
+                    <form action="/student/signup" method="POST" id="signup-form" class="space-y-4">
+                        <!-- Full Name -->
+                        <div>
+                            <label for="signup-name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Full Name</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-id-card text-sm"></i>
+                                </div>
+                                <input type="text" id="signup-name" name="name" required placeholder="Abebe Kebede" class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                            </div>
+                        </div>
+
+                         <!-- Identifier Input -->
+                        <div>
+                            <label for="signin-identifier" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Phone Number</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-user text-sm"></i>
+                                </div>
+                                <input type="number" id="signin-identifier" name="phone" required placeholder="e.g. +251911234567" class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-slate-50/50">
+                            </div>
+                        </div>
+
+                        <!-- Birthdate -->
+                        <div>
+                            <label for="signup-birthdate" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Date of Birth</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-calendar-day text-sm"></i>
+                                </div>
+                                <input type="date" id="signup-birthdate" name="birthdate" required class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                            </div>
+                        </div>
+
+                        <!-- CEFR Level Select + Short Explanation -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label for="signup-cefr" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">CEFR Reading Level</label>
+                                <span class="text-[10px] text-brand-600 font-semibold bg-brand-50 px-2 py-0.5 rounded-full border border-brand-100">Self Assessment</span>
+                            </div>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-graduation-cap text-sm"></i>
+                                </div>
+                                <select id="signup-cefr" name="cefr_level" required onchange="updateCefrInfo(this.value)" class="w-full pl-10 pr-8 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50 appearance-none">
+                                    <option value="" disabled selected>Select your current level</option>
+                                    <option value="A1">A1 - Beginner (Basic Words & Short Phrases)</option>
+                                    <option value="A2">A2 - Elementary (Simple Everyday Passages)</option>
+                                    <option value="B1">B1 - Intermediate (Main Points & Clear Text)</option>
+                                    <option value="B2">B2 - Upper-Intermediate (Complex & Abstract Topics)</option>
+                                    <option value="C1">C1 - Advanced (Fluent, Technical & Long Texts)</option>
+                                    <option value="C2">C2 - Proficient (Mastery & Native-Like Depth)</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                            <!-- Live Explanation Box -->
+                            <div id="cefr-description" class="mt-2 text-[11px] p-2.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 flex items-start gap-2">
+                                <i class="fa-solid fa-circle-info text-brand-600 mt-0.5"></i>
+                                <span id="cefr-desc-text">Select a level above to view its passage guidelines and audio requirements.</span>
+                            </div>
+                        </div>
+
+                        <!-- Password Input -->
+                        <div>
+                            <label for="signup-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-lock text-sm"></i>
+                                </div>
+                                <input type="password" id="signup-password" name="password" required oninput="validatePassword(this.value)" placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                                <button type="button" onclick="togglePasswordVisibility('signup-password', 'signup-eye-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+                                    <i class="fa-solid fa-eye text-sm" id="signup-eye-icon"></i>
+                                </button>
+                            </div>
+
+                            <!-- Live Password Requirement Checkers -->
+                            <div class="mt-2.5 grid grid-cols-3 gap-1.5 text-[11px] font-medium text-slate-500">
+                                <div id="rule-length" class="flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-xmark text-slate-400"></i>
+                                    <span>8+ chars</span>
+                                </div>
+                                <div id="rule-letter" class="flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-xmark text-slate-400"></i>
+                                    <span>Letter (a-z)</span>
+                                </div>
+                                <div id="rule-special" class="flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-xmark text-slate-400"></i>
+                                    <span>Special char</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password Input -->
+                        <div>
+                            <label for="signup-confirm-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Confirm Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-shield-halved text-sm"></i>
+                                </div>
+                                <input type="password" id="signup-confirm-password" name="confirm_password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="signup-submit-btn" class="w-full py-3.5 mt-2 rounded-xl text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/30 hover:shadow-xl transition-all duration-300">
+                            Create Account & Start
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- FORGOT PASSWORD MODAL (OTP FLOW) -->
+    <div id="forgot-password-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl relative border border-slate-100">
+            <!-- Close Button -->
+            <button onclick="closeForgotPasswordModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <!-- STEP 1: ENTER PHONE NUMBER -->
+            <div id="otp-step-1" class="space-y-4">
+                <div class="w-12 h-12 rounded-2xl bg-brand-100 text-brand-600 flex items-center justify-center text-xl font-bold mb-2">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                </div>
+                <h3 class="text-xl font-black text-slate-900 tracking-tight">Reset Password</h3>
+                <p class="text-xs text-slate-500">Enter your registered phone number to receive a verification OTP code.</p>
+
+                <form onsubmit="handleSendOtp(event)" class="space-y-4">
+                    <div>
+                        <label for="forgot-phone" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Phone Number</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-phone text-sm"></i>
+                            </div>
+                            <input type="tel" id="forgot-phone" name="phone" required placeholder="+251 911 234 567" class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-sm shadow-md transition-all">
+                        Send OTP Code
+                    </button>
+                </form>
+            </div>
+
+            <!-- STEP 2: ENTER OTP -->
+            <div id="otp-step-2" class="hidden space-y-4">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl font-bold mb-2">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="text-xl font-black text-slate-900 tracking-tight">Enter OTP Code</h3>
+                <p class="text-xs text-slate-500">We sent a 4-digit verification code to <span id="display-phone-target" class="font-bold text-slate-800">+2519***</span></p>
+
+                <form onsubmit="handleVerifyOtp(event)" class="space-y-4">
+                    <!-- OTP Input Box Dials -->
+                    <div class="flex justify-between gap-2 max-w-xs mx-auto py-2">
+                        <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl font-bold rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 bg-slate-50 outline-none" required>
+                        <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl font-bold rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 bg-slate-50 outline-none" required>
+                        <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl font-bold rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 bg-slate-50 outline-none" required>
+                        <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl font-bold rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 bg-slate-50 outline-none" required>
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm shadow-md transition-all">
+                        Verify & Reset Password
+                    </button>
+
+                    <button type="button" onclick="resendOtp()" class="w-full text-center text-xs text-slate-500 hover:text-brand-600 font-semibold pt-1">
+                        Didn't receive code? Resend OTP
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="py-6 text-center text-xs text-slate-500 border-t border-slate-200 bg-white">
+        <p>&copy; ReadExcel Reading Practice Portal. All rights reserved.</p>
+    </footer>
+
+    <!-- Interactive Scripts -->
+    <script>
+        // Tab switching logic
+        function switchTab(tab) {
+            const signinView = document.getElementById('signin-view');
+            const signupView = document.getElementById('signup-view');
+            const signinBtn = document.getElementById('tab-signin-btn');
+            const signupBtn = document.getElementById('tab-signup-btn');
+
+            if (tab === 'signin') {
+                signinView.classList.remove('hidden');
+                signupView.classList.add('hidden');
+                
+                signinBtn.classList.add('text-brand-700', 'bg-white', 'shadow-sm');
+                signinBtn.classList.remove('text-slate-500');
+
+                signupBtn.classList.remove('text-brand-700', 'bg-white', 'shadow-sm');
+                signupBtn.classList.add('text-slate-500');
+            } else {
+                signupView.classList.remove('hidden');
+                signinView.classList.add('hidden');
+
+                signupBtn.classList.add('text-brand-700', 'bg-white', 'shadow-sm');
+                signupBtn.classList.remove('text-slate-500');
+
+                signinBtn.classList.remove('text-brand-700', 'bg-white', 'shadow-sm');
+                signinBtn.classList.add('text-slate-500');
+            }
+        }
+
+        // Toggle password visibilities
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // CEFR explanations dictionary
+        const cefrExplanations = {
+            'A1': 'A1 (Beginner): Understand basic expressions, very simple words, and short slow-paced reading passages.',
+            'A2': 'A2 (Elementary): Read simple everyday texts like short announcements, menus, and basic personal narratives.',
+            'B1': 'B1 (Intermediate): Comprehend main points of standard texts about familiar subjects (school, hobbies, work).',
+            'B2': 'B2 (Upper-Intermediate): Understand complex technical articles, abstract arguments, and fluid literature.',
+            'C1': 'C1 (Advanced): Grasp long, demanding texts, recognizing implicit meanings and subtexts effortlessly.',
+            'C2': 'C2 (Proficient): Read with total native fluency, understanding complex nuances and academic papers.'
+        };
+
+        function updateCefrInfo(level) {
+            const descText = document.getElementById('cefr-desc-text');
+            if (cefrExplanations[level]) {
+                descText.textContent = cefrExplanations[level];
+            }
+        }
+
+        // Live Password Validation rules checks
+        function validatePassword(val) {
+            const ruleLength = document.getElementById('rule-length');
+            const ruleLetter = document.getElementById('rule-letter');
+            const ruleSpecial = document.getElementById('rule-special');
+
+            // 1. Length >= 8
+            const hasLength = val.length >= 8;
+            updateRuleUI(ruleLength, hasLength);
+
+            // 2. Letter a-z or A-Z
+            const hasLetter = /[a-zA-Z]/.test(val);
+            updateRuleUI(ruleLetter, hasLetter);
+
+            // 3. Special character
+            const hasSpecial = /[^a-zA-Z0-9]/.test(val);
+            updateRuleUI(ruleSpecial, hasSpecial);
+        }
+
+        function updateRuleUI(el, isValid) {
+            const icon = el.querySelector('i');
+            if (isValid) {
+                el.classList.remove('text-slate-500');
+                el.classList.add('text-emerald-600');
+                icon.className = 'fa-solid fa-circle-check text-emerald-500';
+            } else {
+                el.classList.remove('text-emerald-600');
+                el.classList.add('text-slate-500');
+                icon.className = 'fa-solid fa-circle-xmark text-slate-400';
+            }
+        }
+
+        // Confirm Password Match Check
+        document.getElementById('signup-form').addEventListener('submit', function(e) {
+            const pass = document.getElementById('signup-password').value;
+            const confirmPass = document.getElementById('signup-confirm-password').value;
+            
+            if (pass !== confirmPass) {
+                e.preventDefault();
+                alert("Passwords do not match! Please check and try again.");
+            }
+        });
+
+        // Modal triggers
+        function openForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').classList.remove('hidden');
+        }
+
+        function closeForgotPasswordModal() {
+            document.getElementById('forgot-password-modal').classList.add('hidden');
+            // reset steps
+            document.getElementById('otp-step-1').classList.remove('hidden');
+            document.getElementById('otp-step-2').classList.add('hidden');
+        }
+
+        function handleSendOtp(e) {
+            e.preventDefault();
+            const phoneVal = document.getElementById('forgot-phone').value;
+            document.getElementById('display-phone-target').textContent = phoneVal;
+            document.getElementById('otp-step-1').classList.add('hidden');
+            document.getElementById('otp-step-2').classList.remove('hidden');
+        }
+
+        function handleVerifyOtp(e) {
+            e.preventDefault();
+            alert("OTP Verified successfully! A temporary reset link has been issued to your device.");
+            closeForgotPasswordModal();
+        }
+
+        function resendOtp() {
+            alert("A new OTP code has been sent to your phone number.");
+        }
+
+        // Auto focus next input for OTP boxes
+        const otpInputs = document.querySelectorAll('.otp-input');
+        otpInputs.forEach((input, idx) => {
+            input.addEventListener('keyup', (e) => {
+                if (input.value.length === 1 && idx < otpInputs.length - 1) {
+                    otpInputs[idx + 1].focus();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
