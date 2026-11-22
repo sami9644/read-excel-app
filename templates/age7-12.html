@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordQuest Reader Studio (Ages 7-12)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts: Outfits & OpenDyslexic fallback style -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        lexend: ['Lexend', 'sans-serif'],
+                        dyslexic: ['Comic Sans MS', 'Lexend', 'sans-serif'] // Dyslexic friendly alternative
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        quest: {
+                            purple: '#8b5cf6',
+                            amber: '#f59e0b',
+                            emerald: '#10b981',
+                            rose: '#f43f5e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.5);
+            border-radius: 9999px;
+        }
+
+        /* Reading focus highlight overlay */
+        .reading-highlight {
+            background-color: #fde047;
+            color: #0f172a;
+            border-radius: 0.25rem;
+            padding: 0 0.25rem;
+            box-shadow: 0 0 10px rgba(253, 224, 71, 0.6);
+            transition: all 0.15s ease-in-out;
+        }
+
+        /* Line Focus Ruler */
+        #line-focus-ruler {
+            pointer-events: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            height: 48px;
+            background: rgba(254, 240, 138, 0.25);
+            border-top: 2px solid rgba(234, 179, 8, 0.6);
+            border-bottom: 2px solid rgba(234, 179, 8, 0.6);
+            backdrop-filter: contrast(120%);
+            z-index: 40;
+            display: none;
+            transition: top 0.05s ease-out;
+        }
+
+        /* Target vocab highlight */
+        .vocab-word {
+            text-decoration: underline;
+            text-decoration-color: #3b82f6;
+            text-decoration-thickness: 2px;
+            text-underline-offset: 4px;
+            background-color: rgba(59, 130, 246, 0.12);
+            padding: 2px 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .vocab-word:hover {
+            background-color: rgba(59, 130, 246, 0.3);
+            color: #1d4ed8;
+        }
+
+        .theme-sepia {
+            background-color: #fbf0d9 !important;
+            color: #433422 !important;
+        }
+        .theme-sepia .card-bg {
+            background-color: #f3e5c8 !important;
+            border-color: #e2d1a6 !important;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .pulse-recording {
+            animation: pulse-ring 1.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Line Focus Tool -->
+    <div id="line-focus-ruler"></div>
+
+    <div class="min-h-full flex flex-col">
+        <!-- TOP NAVIGATION BAR -->
+        <header class="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/80 sticky top-0 z-50 px-4 py-3">
+            <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="switchNav('library')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-quest-purple to-quest-rose flex items-center justify-center text-white shadow-lg shadow-brand-500/20 font-bold text-xl">
+                        <i data-lucide="compass" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-brand-300 bg-clip-text text-transparent">
+                                WordQuest
+                            </h1>
+                            <span class="text-[10px] uppercase tracking-wider font-extrabold bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full">Ages 7-12</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-2xl border border-slate-700/60">
+                    <button id="nav-library" onclick="switchNav('library')" class="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition text-white bg-brand-600 shadow-md">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> Library
+                    </button>
+                    <button id="nav-studio" onclick="switchNav('studio')" class="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> Reader Studio
+                    </button>
+                    <button id="nav-games" onclick="switchNav('games')" class="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="gamepad-2" class="w-4 h-4"></i> Word Games
+                    </button>
+                    <button id="nav-stats" onclick="switchNav('stats')" class="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition text-slate-400 hover:text-white hover:bg-slate-800">
+                        <i data-lucide="trophy" class="w-4 h-4"></i> Achievements
+                    </button>
+                </nav>
+
+                <!-- Gamification Badges Bar -->
+                <div class="flex items-center gap-3">
+                    <!-- Streak -->
+                    <div class="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1.5 rounded-xl text-amber-400 font-bold text-sm">
+                        <i data-lucide="flame" class="w-4 h-4 fill-amber-400"></i>
+                        <span id="user-streak">3</span>
+                    </div>
+
+                    <!-- XP Counter -->
+                    <div class="flex items-center gap-1.5 bg-quest-purple/10 border border-quest-purple/30 px-3 py-1.5 rounded-xl text-quest-purple font-bold text-sm">
+                        <i data-lucide="zap" class="w-4 h-4 fill-quest-purple"></i>
+                        <span id="user-xp">450</span> <span class="text-xs text-slate-400">XP</span>
+                    </div>
+
+                    <!-- Level Badge -->
+                    <div class="hidden sm:flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-emerald-400 font-bold text-sm">
+                        <i data-lucide="award" class="w-4 h-4"></i>
+                        <span>Lvl <span id="user-level">3</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Nav Bar -->
+            <div class="flex md:hidden items-center justify-around pt-3 border-t border-slate-700/50 mt-2">
+                <button onclick="switchNav('library')" class="text-xs font-semibold flex flex-col items-center gap-1 text-slate-300">
+                    <i data-lucide="book-open" class="w-5 h-5"></i> Library
+                </button>
+                <button onclick="switchNav('studio')" class="text-xs font-semibold flex flex-col items-center gap-1 text-slate-300">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i> Studio
+                </button>
+                <button onclick="switchNav('games')" class="text-xs font-semibold flex flex-col items-center gap-1 text-slate-300">
+                    <i data-lucide="gamepad-2" class="w-5 h-5"></i> Games
+                </button>
+                <button onclick="switchNav('stats')" class="text-xs font-semibold flex flex-col items-center gap-1 text-slate-300">
+                    <i data-lucide="trophy" class="w-5 h-5"></i> Stats
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8">
+
+            <!-- ================= VIEW 1: LIBRARY ================= -->
+            <section id="view-library" class="space-y-6">
+                <!-- Hero Banner -->
+                <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-900 via-indigo-950 to-slate-900 border border-slate-700/80 p-6 md:p-8 shadow-2xl">
+                    <div class="relative z-10 max-w-2xl space-y-3">
+                        <div class="inline-flex items-center gap-2 bg-brand-500/20 border border-brand-400/30 text-brand-300 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                            <i data-lucide="rocket" class="w-3.5 h-3.5"></i> Ready For Adventure
+                        </div>
+                        <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Choose Your Reading Quest</h2>
+                        <p class="text-slate-300 text-sm md:text-base leading-relaxed">
+                            Discover exciting stories, build your vocabulary, practice fluency with AI speech feedback, and earn XP!
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Filters & Controls -->
+                <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-slate-800/60 border border-slate-700/60 p-4 rounded-2xl">
+                    <!-- Grade Level Selector -->
+                    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                        <span class="text-xs font-bold uppercase text-slate-400 mr-1">Level:</span>
+                        <button onclick="filterGrade('all')" id="grade-all" class="grade-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-brand-600 text-white">All Grades</button>
+                        <button onclick="filterGrade('g23')" id="grade-g23" class="grade-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-700 text-slate-300 hover:bg-slate-600">Grade 2-3 (Early)</button>
+                        <button onclick="filterGrade('g45')" id="grade-g45" class="grade-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-700 text-slate-300 hover:bg-slate-600">Grade 4-5 (Intermediate)</button>
+                        <button onclick="filterGrade('g6')" id="grade-g6" class="grade-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-slate-700 text-slate-300 hover:bg-slate-600">Grade 6 (Advanced)</button>
+                    </div>
+
+                    <!-- Topic Filter -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold uppercase text-slate-400">Topic:</label>
+                        <select id="topic-select" onchange="filterTopic(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-3 py-1.5 focus:outline-none focus:border-brand-500">
+                            <option value="all">All Topics</option>
+                            <option value="space">🚀 Sci-Fi & Space</option>
+                            <option value="mystery">🔍 Mysteries & Detectives</option>
+                            <option value="nature">🌿 Nature & Science</option>
+                            <option value="myth">⚔️ Myths & Legends</option>
+                            <option value="history">📜 Historical Adventures</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Passage Cards Grid -->
+                <div id="passages-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Dynamic rendering of story cards -->
+                </div>
+            </section>
+
+
+            <!-- ================= VIEW 2: READER STUDIO ================= -->
+            <section id="view-studio" class="hidden space-y-6">
+                
+                <!-- Studio Header Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-800/80 border border-slate-700 p-4 rounded-2xl">
+                    <button onclick="switchNav('library')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold flex items-center gap-2 text-slate-200 transition">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Library
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <span id="current-story-badge" class="px-3 py-1 rounded-full text-xs font-extrabold uppercase bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                            Grade 4-5 • Sci-Fi
+                        </span>
+                        <h3 id="current-story-title" class="text-lg font-bold text-white hidden sm:block">The Secrets of Titan Base</h3>
+                    </div>
+
+                    <!-- Font & Accessibility Tools Modal Toggle Bar -->
+                    <div class="flex items-center gap-2">
+                        <!-- Theme Toggle -->
+                        <button onclick="cycleTheme()" class="p-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-200 transition" title="Toggle Light/Dark/Sepia Mode">
+                            <i data-lucide="sun-moon" class="w-4 h-4"></i>
+                        </button>
+                        <!-- Dyslexic Font Toggle -->
+                        <button id="btn-dyslexic" onclick="toggleDyslexicFont()" class="px-2.5 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold text-slate-200 transition" title="Toggle Dyslexic Font">
+                            OpenDyslexic
+                        </button>
+                        <!-- Line Focus Ruler Toggle -->
+                        <button id="btn-ruler" onclick="toggleLineRuler()" class="p-2 bg-slate-700 hover:bg-slate-600 rounded-xl text-slate-200 transition" title="Toggle Line Focus Overlay">
+                            <i data-lucide="scan-line" class="w-4 h-4"></i>
+                        </button>
+                        <!-- Font Size Adjustment -->
+                        <div class="flex items-center bg-slate-700 rounded-xl p-1">
+                            <button onclick="adjustFontSize(-2)" class="px-2 py-0.5 text-xs font-bold hover:bg-slate-600 rounded text-slate-200">-A</button>
+                            <button onclick="adjustFontSize(2)" class="px-2 py-0.5 text-xs font-bold hover:bg-slate-600 rounded text-slate-200">+A</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Reading Workspace Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    <!-- Left / Main: The Reading Board -->
+                    <div class="lg:col-span-8 space-y-6">
+                        <div id="reading-paper" class="card-bg bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 md:p-8 shadow-xl relative min-h-[420px] transition-all">
+                            
+                            <!-- Story Info -->
+                            <div class="border-b border-slate-700/60 pb-4 mb-6 flex items-start justify-between">
+                                <div>
+                                    <h2 id="reader-title" class="text-2xl md:text-3xl font-extrabold text-white">The Secrets of Titan Base</h2>
+                                    <p id="reader-author" class="text-xs text-slate-400 mt-1">By Dr. Elena Vance • Est. Reading Time: 3 mins</p>
+                                </div>
+                                <div id="reader-topic-icon" class="text-3xl">🚀</div>
+                            </div>
+
+                            <!-- Formatted Passage Text Container -->
+                            <div id="reader-content" class="text-slate-200 leading-relaxed text-lg font-normal space-y-4 font-lexend select-text">
+                                <!-- Paragraphs injected dynamically with interactive vocab elements -->
+                            </div>
+
+                        </div>
+
+                        <!-- Speech & Audio Controls Panel -->
+                        <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+                            
+                            <!-- TTS Read-Aloud Controls -->
+                            <div class="flex items-center gap-2">
+                                <button id="btn-play-tts" onclick="toggleTTS()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg flex items-center gap-2 transition active:scale-95">
+                                    <i id="tts-icon" data-lucide="play" class="w-5 h-5 fill-white"></i>
+                                    <span id="tts-label">Read To Me</span>
+                                </button>
+                                <button onclick="stopTTS()" class="p-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold rounded-xl transition">
+                                    <i data-lucide="square" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+
+                            <!-- Speed / Pitch Controls -->
+                            <div class="flex items-center gap-4 text-xs font-semibold text-slate-300">
+                                <div class="flex items-center gap-1.5">
+                                    <i data-lucide="gauge" class="w-4 h-4 text-slate-400"></i>
+                                    <span>Speed:</span>
+                                    <select id="tts-speed" onchange="updateTTSParams()" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-2 py-1">
+                                        <option value="0.75">0.75x (Slow)</option>
+                                        <option value="0.9" selected>0.9x (Normal)</option>
+                                        <option value="1.1">1.1x (Fast)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Speech Recognition Read-Aloud Voice Mic -->
+                            <div class="flex items-center gap-2 border-l border-slate-700 pl-4">
+                                <button id="btn-mic-rec" onclick="toggleVoiceRecording()" class="px-4 py-2 bg-quest-rose hover:bg-rose-600 text-white font-bold rounded-xl text-sm shadow-lg flex items-center gap-2 transition active:scale-95">
+                                    <i data-lucide="mic" class="w-4 h-4"></i>
+                                    <span id="mic-label">Read Aloud Practice</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Voice Recognition Realtime Feedback Bar -->
+                        <div id="voice-feedback-card" class="hidden bg-slate-900/90 border border-quest-rose/40 rounded-2xl p-4 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold uppercase text-quest-rose flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-quest-rose animate-ping"></span> Speech Recognition Active
+                                </span>
+                                <span id="speech-accuracy" class="text-xs font-bold text-slate-300">Match Accuracy: 0%</span>
+                            </div>
+                            <p id="speech-transcript" class="text-sm italic text-slate-300 bg-slate-800 p-3 rounded-xl border border-slate-700 min-h-[48px]">
+                                Speak the text aloud into your microphone...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right Sidebar: Vocab Tool & Comprehension Quiz -->
+                    <div class="lg:col-span-4 space-y-6">
+                        
+                        <!-- Vocabulary Explorer Tooltip Box -->
+                        <div class="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-5 shadow-xl space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                    <i data-lucide="book-marked" class="w-5 h-5 text-brand-400"></i>
+                                    <span>Word Inspector</span>
+                                </h3>
+                                <span class="text-[10px] uppercase font-bold text-slate-400">Click highlighted words</span>
+                            </div>
+
+                            <div id="vocab-display" class="space-y-3">
+                                <div class="text-center py-8 text-slate-400 text-sm">
+                                    <i data-lucide="mouse-pointer-click" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                                    Tap any <span class="text-brand-400 underline font-semibold">blue highlighted word</span> in the passage to view definition, syllables, and audio!
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comprehension Quiz Launcher Card -->
+                        <div class="bg-gradient-to-br from-quest-purple/20 via-slate-800 to-slate-800 border border-quest-purple/40 rounded-3xl p-6 shadow-xl space-y-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-quest-purple flex items-center justify-center text-white font-bold">
+                                    <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white text-base">Story Quiz Challenge</h4>
+                                    <p class="text-xs text-slate-300">Test your understanding & earn 50 XP!</p>
+                                </div>
+                            </div>
+
+                            <button onclick="openComprehensionQuiz()" class="w-full py-3 bg-quest-purple hover:bg-purple-600 text-white font-extrabold rounded-xl shadow-lg transition active:scale-95 flex items-center justify-center gap-2 text-sm">
+                                <span>Start Comprehension Quiz</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ================= VIEW 3: WORD GAMES ================= -->
+            <section id="view-games" class="hidden space-y-6">
+                <div class="bg-slate-800/80 border border-slate-700 p-6 rounded-3xl text-center max-w-xl mx-auto space-y-3">
+                    <div class="w-12 h-12 bg-quest-amber/20 text-quest-amber rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold">
+                        <i data-lucide="gamepad-2" class="w-6 h-6"></i>
+                    </div>
+                    <h2 class="text-2xl font-extrabold text-white">Vocab Match Arena</h2>
+                    <p class="text-sm text-slate-300">Match the target vocabulary words with their correct definitions to win XP!</p>
+                </div>
+
+                <!-- Match Game Arena -->
+                <div id="game-arena" class="max-w-4xl mx-auto bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+                        <div class="text-sm font-bold text-slate-300">
+                            Score: <span id="game-score" class="text-quest-amber font-extrabold text-lg">0</span>
+                        </div>
+                        <button onclick="initMatchGame()" class="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-xl text-xs font-bold text-white transition flex items-center gap-1.5">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Shuffle Deck
+                        </button>
+                    </div>
+
+                    <!-- Matching Cards Grid -->
+                    <div id="match-cards-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <!-- Dynamic card slots -->
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ================= VIEW 4: STATS & ACHIEVEMENTS ================= -->
+            <section id="view-stats" class="hidden space-y-6">
+                
+                <!-- Stats Overview Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold">
+                            <i data-lucide="book-open-check" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-extrabold text-white" id="stat-completed">2</div>
+                            <div class="text-xs text-slate-400 font-medium">Passages Read</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-quest-emerald/20 text-quest-emerald flex items-center justify-center font-bold">
+                            <i data-lucide="gauge" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-extrabold text-white" id="stat-wpm">135</div>
+                            <div class="text-xs text-slate-400 font-medium">Est. Reading WPM</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-quest-purple/20 text-quest-purple flex items-center justify-center font-bold">
+                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-extrabold text-white" id="stat-accuracy">92%</div>
+                            <div class="text-xs text-slate-400 font-medium">Quiz Accuracy</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-quest-amber/20 text-quest-amber flex items-center justify-center font-bold">
+                            <i data-lucide="award" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-extrabold text-white" id="stat-words-learned">18</div>
+                            <div class="text-xs text-slate-400 font-medium">Vocab Mastered</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements / Badges Matrix -->
+                <div class="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 space-y-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-quest-amber"></i> Badges & Rewards Unlocked
+                    </h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="badges-grid">
+                        <!-- Badges injected dynamically -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- COMPREHENSION QUIZ MODAL -->
+    <div id="quiz-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl max-w-xl w-full p-6 space-y-6 shadow-2xl relative overflow-hidden">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="brain" class="w-5 h-5 text-quest-purple"></i>
+                    <h3 class="font-bold text-white text-lg">Comprehension Check</h3>
+                </div>
+                <button onclick="closeQuizModal()" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Quiz Question Body -->
+            <div id="quiz-body" class="space-y-4">
+                <!-- Dynamically populated question content -->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ================= PASSAGE DATABASE ================= */
+        const storyDatabase = [
+            {
+                id: 'titan-base',
+                title: 'The Secrets of Titan Base',
+                author: 'Dr. Elena Vance',
+                grade: 'g45',
+                topic: 'space',
+                topicIcon: '🚀',
+                estimatedWpm: 120,
+                summary: 'Explorer Maya arrives at Saturn’s moon Titan to investigate mysterious signals beneath the icy crust.',
+                text: [
+                    "Commander Maya gazed out the reinforced viewport of Titan Base Alpha. Below her, the orange methane clouds of Saturn’s giant moon swirled like a endless storm.",
+                    "Her mission was critical: investigate an unexpected anomaly detected three kilometers beneath Titan's frozen outer crust. Instruments indicated a heat signature that shouldn't naturally exist.",
+                    "Equipped with an advanced thermal drill, her team descended into the icy cavern. As the drill broke through the final layer, they discovered a vast underground ocean illuminated by glowing bioluminescent organisms.",
+                    "Maya recorded the data carefully. 'This ecosystem proves that life can flourish in the most improbable conditions in our solar system,' she radioed back to Earth."
+                ],
+                vocab: {
+                    "anomaly": { phonetic: "uh-NOM-uh-lee", syllables: "a·nom·a·ly", definition: "Something that deviates from what is standard, normal, or expected." },
+                    "crust": { phonetic: "KRUST", syllables: "crust", definition: "The tough outer layer or shell of a planetary body." },
+                    "thermal": { phonetic: "THUR-muhl", syllables: "ther·mal", definition: "Relating to heat or temperature." },
+                    "bioluminescent": { phonetic: "by-oh-loo-muh-NES-uhnt", syllables: "bi·o·lu·mi·nes·cent", definition: "Light produced by a chemical reaction inside a living organism." },
+                    "flourish": { phonetic: "FLUR-ish", syllables: "flour·ish", definition: "To grow or develop in a healthy, vigorous way." }
+                },
+                quiz: [
+                    {
+                        question: "Why was Commander Maya's team investigating Titan?",
+                        options: ["To construct a solar energy grid", "To investigate an unexpected heat anomaly", "To mine for rare diamonds", "To repair an abandoned spaceship"],
+                        answer: 1
+                    },
+                    {
+                        question: "What did the team find underneath the ice crust?",
+                        options: ["An underground ocean with bioluminescent life", "An ancient human outpost", "A giant sleeping alien creature", "A volcano spewing fire"],
+                        answer: 0
+                    }
+                ]
+            },
+            {
+                id: 'curse-pharaoh',
+                title: 'The Labyrinth of King Amenhotep',
+                author: 'Marcus Brody',
+                grade: 'g6',
+                topic: 'history',
+                topicIcon: '📜',
+                estimatedWpm: 150,
+                summary: 'An archaeological dig in Egypt uncovers a hidden chamber containing coded hieroglyphs.',
+                text: [
+                    "Deep beneath the golden sands of the Valley of the Kings, archaeologist Sarah unwrapped a ancient papyrus scroll. Her lantern flickered, casting shadows against stone walls covered in intricate hieroglyphs.",
+                    "The translation revealed a warning: only those who understood the celestial alignment of the stars could navigate the subterranean labyrinth safely.",
+                    "Sarah adjusted her magnifying glass. The symbols depicted Orion’s Belt aligning with the peak of the Great Pyramid. It was a mathematical cipher designed to protect sacred historical artifacts.",
+                    "With steady hands, she aligned the stone gears on the chamber door. With a heavy thud, the ancient portal swung open, revealing treasures untouched for three millennia."
+                ],
+                vocab: {
+                    "hieroglyphs": { phonetic: "HY-ruh-glifs", syllables: "hi·er·o·glyphs", definition: "Ancient Egyptian writing system using pictures and symbols." },
+                    "celestial": { phonetic: "suh-LES-chuhl", syllables: "ce·les·tial", definition: "Positioned in or relating to the sky or outer space." },
+                    "subterranean": { phonetic: "sub-tuh-RAY-nee-uhn", syllables: "sub·ter·ra·ne·an", definition: "Existing, situated, or operating below the earth's surface." },
+                    "cipher": { phonetic: "SY-fur", syllables: "ci·pher", definition: "A secret or disguised way of writing; a code." },
+                    "millennia": { phonetic: "muh-LEN-ee-uh", syllables: "mil·len·ni·a", definition: "A period of a thousand years." }
+                },
+                quiz: [
+                    {
+                        question: "What was required to navigate the subterranean labyrinth safely?",
+                        options: ["A golden key", "Understanding the celestial alignment of the stars", "A modern laser cutter", "Reading a Latin dictionary"],
+                        answer: 1
+                    },
+                    {
+                        question: "What did the word 'cipher' refer to in the story?",
+                        options: ["A mathematical secret code", "A heavy iron hammer", "A type of Egyptian torch", "A sandstorm"],
+                        answer: 0
+                    }
+                ]
+            },
+            {
+                id: 'whispering-forest',
+                title: 'The Secret of the Redwood Grove',
+                author: 'Claire Sterling',
+                grade: 'g23',
+                topic: 'nature',
+                topicIcon: '🌿',
+                estimatedWpm: 95,
+                summary: 'Leo discovers how ancient Redwood trees communicate through underground fungal networks.',
+                text: [
+                    "Leo loved walking through the towering Redwood forest near his home. These trees were so tall they seemed to touch the clouds.",
+                    "His park ranger guide explained a amazing secret: trees talk to each other! Underneath the soil, tiny fungal threads connect the roots of every tree.",
+                    "When a young sapling needs extra nutrients, older trees share food through this hidden root network. It works like a forest internet!",
+                    "Leo smiled and rested his hand on a massive trunk. He realized the forest was one big supportive family."
+                ],
+                vocab: {
+                    "fungal": { phonetic: "FUNG-guhl", syllables: "fun·gal", definition: "Relating to or caused by fungi (like mushrooms)." },
+                    "nutrients": { phonetic: "NOO-tree-uhnts", syllables: "nu·tri·ents", definition: "Substances that provide nourishment essential for growth." },
+                    "sapling": { phonetic: "SAP-ling", syllables: "sap·ling", definition: "A young, slender tree." }
+                },
+                quiz: [
+                    {
+                        question: "How do Redwood trees share nutrients underground?",
+                        options: ["Through underground fungal root networks", "Using rain water drops", "By dropping leaves", "With wind signals"],
+                        answer: 0
+                    }
+                ]
+            }
+        ];
+
+        /* ================= APP STATE ================= */
+        let state = {
+            currentStory: storyDatabase[0],
+            xp: 450,
+            streak: 3,
+            level: 3,
+            theme: 'dark', // 'dark', 'light', 'sepia'
+            fontSize: 18,
+            isDyslexicFont: false,
+            isLineRulerActive: false,
+            selectedGrade: 'all',
+            selectedTopic: 'all',
+            gameScore: 0,
+            speechSynth: window.speechSynthesis,
+            speechUtterance: null,
+            isSpeaking: false,
+            speechRec: null,
+            isRecording: false
+        };
+
+        /* ================= INITIALIZATION ================= */
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderPassagesGrid();
+            loadStoryIntoStudio(storyDatabase[0]);
+            initSpeechRecognition();
+            initLineRulerListener();
+            renderBadges();
+        });
+
+        /* ================= NAVIGATION ================= */
+        function switchNav(targetView) {
+            ['library', 'studio', 'games', 'stats'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                const btn = document.getElementById(`nav-${v}`);
+                if (btn) {
+                    btn.classList.remove('bg-brand-600', 'text-white', 'shadow-md');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+
+            document.getElementById(`view-${targetView}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${targetView}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-md');
+                activeBtn.classList.remove('text-slate-400');
+            }
+
+            if (targetView === 'games') {
+                initMatchGame();
+            }
+        }
+
+        /* ================= LIBRARY FILTERING & RENDERING ================= */
+        function renderPassagesGrid() {
+            const grid = document.getElementById('passages-grid');
+            grid.innerHTML = '';
+
+            const filtered = storyDatabase.filter(story => {
+                const matchesGrade = state.selectedGrade === 'all' || story.grade === state.selectedGrade;
+                const matchesTopic = state.selectedTopic === 'all' || story.topic === state.selectedTopic;
+                return matchesGrade && matchesTopic;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">No reading passages found matching your filters.</div>`;
+                return;
+            }
+
+            filtered.forEach(story => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 shadow-xl hover:shadow-2xl hover:border-brand-500/50 transition-all duration-300 flex flex-col justify-between space-y-4 group cursor-pointer";
+                
+                const gradeLabel = story.grade === 'g23' ? 'Grade 2-3' : story.grade === 'g45' ? 'Grade 4-5' : 'Grade 6';
+
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-3xl">${story.topicIcon}</span>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-extrabold uppercase bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                                ${gradeLabel}
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-bold text-white group-hover:text-brand-300 transition">${story.title}</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">${story.summary}</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-700/60 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                            <i data-lucide="clock" class="w-3.5 h-3.5"></i> ~${story.estimatedWpm} WPM
+                        </span>
+                        <button onclick="selectStory('${story.id}')" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+                            <span>Read Story</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function filterGrade(grade) {
+            state.selectedGrade = grade;
+            document.querySelectorAll('.grade-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-600', 'text-white');
+                btn.classList.add('bg-slate-700', 'text-slate-300');
+            });
+            document.getElementById(`grade-${grade}`).classList.add('bg-brand-600', 'text-white');
+            renderPassagesGrid();
+        }
+
+        function filterTopic(topic) {
+            state.selectedTopic = topic;
+            renderPassagesGrid();
+        }
+
+        function selectStory(storyId) {
+            const found = storyDatabase.find(s => s.id === storyId);
+            if (found) {
+                state.currentStory = found;
+                loadStoryIntoStudio(found);
+                switchNav('studio');
+            }
+        }
+
+        /* ================= READER STUDIO LOGIC ================= */
+        function loadStoryIntoStudio(story) {
+            document.getElementById('reader-title').innerText = story.title;
+            document.getElementById('reader-author').innerText = `By ${story.author} • Est. Speed: ${story.estimatedWpm} WPM`;
+            document.getElementById('reader-topic-icon').innerText = story.topicIcon;
+
+            const contentContainer = document.getElementById('reader-content');
+            contentContainer.innerHTML = '';
+
+            // Inject paragraph text and highlight vocabulary words
+            story.text.forEach((paragraph, pIdx) => {
+                let pHTML = paragraph;
+
+                // Replace vocab terms with interactive spans
+                Object.keys(story.vocab).forEach(term => {
+                    const regex = new RegExp(`\\b(${term})\\b`, 'gi');
+                    pHTML = pHTML.replace(regex, `<span class="vocab-word" onclick="inspectVocab('$1')">$1</span>`);
+                });
+
+                const pElem = document.createElement('p');
+                pElem.id = `para-${pIdx}`;
+                pElem.innerHTML = pHTML;
+                contentContainer.appendChild(pElem);
+            });
+
+            // Reset Vocab Inspector Box
+            document.getElementById('vocab-display').innerHTML = `
+                <div class="text-center py-8 text-slate-400 text-sm">
+                    <i data-lucide="mouse-pointer-click" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                    Tap any <span class="text-brand-400 underline font-semibold">blue highlighted word</span> in the passage to view definition, syllables, and audio!
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        /* Vocab Inspector Tooltip Handler */
+        function inspectVocab(wordRaw) {
+            const wordKey = wordRaw.toLowerCase();
+            const vocabObj = state.currentStory.vocab[wordKey];
+
+            if (!vocabObj) return;
+
+            const display = document.getElementById('vocab-display');
+            display.innerHTML = `
+                <div class="space-y-3 bg-slate-900/80 p-4 rounded-2xl border border-brand-500/30 animate-pop">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-xl font-extrabold text-brand-300 capitalize">${wordRaw}</h4>
+                        <button onclick="speakText('${wordRaw}')" class="p-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow transition" title="Listen Pronunciation">
+                            <i data-lucide="volume-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                        <span class="bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Syllables: ${vocabObj.syllables}</span>
+                        <span class="italic">[${vocabObj.phonetic}]</span>
+                    </div>
+
+                    <p class="text-sm text-slate-200 leading-snug font-medium">
+                        ${vocabObj.definition}
+                    </p>
+                </div>
+            `;
+            lucide.createIcons();
+            speakText(wordRaw);
+        }
+
+        /* ================= DISPLAY ACCESSIBILITY CONTROLS ================= */
+        function cycleTheme() {
+            const paper = document.getElementById('reading-paper');
+            if (state.theme === 'dark') {
+                state.theme = 'sepia';
+                paper.classList.add('theme-sepia');
+            } else if (state.theme === 'sepia') {
+                state.theme = 'light';
+                paper.classList.remove('theme-sepia');
+                paper.classList.add('bg-white', 'text-slate-900');
+            } else {
+                state.theme = 'dark';
+                paper.classList.remove('bg-white', 'text-slate-900');
+            }
+        }
+
+        function toggleDyslexicFont() {
+            state.isDyslexicFont = !state.isDyslexicFont;
+            const content = document.getElementById('reader-content');
+            const btn = document.getElementById('btn-dyslexic');
+            
+            if (state.isDyslexicFont) {
+                content.classList.add('font-dyslexic');
+                btn.classList.add('bg-brand-600', 'text-white');
+            } else {
+                content.classList.remove('font-dyslexic');
+                btn.classList.remove('bg-brand-600', 'text-white');
+            }
+        }
+
+        function adjustFontSize(delta) {
+            state.fontSize = Math.max(14, Math.min(28, state.fontSize + delta));
+            document.getElementById('reader-content').style.fontSize = `${state.fontSize}px`;
+        }
+
+        function toggleLineRuler() {
+            state.isLineRulerActive = !state.isLineRulerActive;
+            const ruler = document.getElementById('line-focus-ruler');
+            const btn = document.getElementById('btn-ruler');
+            if (state.isLineRulerActive) {
+                ruler.style.display = 'block';
+                btn.classList.add('bg-brand-600', 'text-white');
+            } else {
+                ruler.style.display = 'none';
+                btn.classList.remove('bg-brand-600', 'text-white');
+            }
+        }
+
+        function initLineRulerListener() {
+            window.addEventListener('mousemove', (e) => {
+                if (state.isLineRulerActive) {
+                    const ruler = document.getElementById('line-focus-ruler');
+                    ruler.style.top = `${e.clientY - 24}px`;
+                }
+            });
+        }
+
+        /* ================= TTS & SPEECH RECOGNITION ================= */
+        function speakText(text) {
+            if (!state.speechSynth) return;
+            state.speechSynth.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.rate = parseFloat(document.getElementById('tts-speed').value || 0.9);
+            state.speechSynth.speak(u);
+        }
+
+        function toggleTTS() {
+            if (state.isSpeaking) {
+                stopTTS();
+                return;
+            }
+
+            const fullText = state.currentStory.text.join(' ');
+            const words = fullText.split(' ');
+            
+            state.speechUtterance = new SpeechSynthesisUtterance(fullText);
+            state.speechUtterance.rate = parseFloat(document.getElementById('tts-speed').value || 0.9);
+
+            state.speechUtterance.onstart = () => {
+                state.isSpeaking = true;
+                document.getElementById('tts-label').innerText = 'Pause';
+                document.getElementById('tts-icon').setAttribute('data-lucide', 'pause');
+                lucide.createIcons();
+            };
+
+            state.speechUtterance.onend = () => {
+                stopTTS();
+                addXP(20);
+            };
+
+            state.speechSynth.speak(state.speechUtterance);
+        }
+
+        function stopTTS() {
+            if (state.speechSynth) state.speechSynth.cancel();
+            state.isSpeaking = false;
+            document.getElementById('tts-label').innerText = 'Read To Me';
+            document.getElementById('tts-icon').setAttribute('data-lucide', 'play');
+            lucide.createIcons();
+        }
+
+        function updateTTSParams() {
+            if (state.isSpeaking) {
+                stopTTS();
+                toggleTTS();
+            }
+        }
+
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                state.speechRec = new SpeechRecognition();
+                state.speechRec.continuous = true;
+                state.speechRec.interimResults = true;
+
+                state.speechRec.onresult = (event) => {
+                    let transcript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        transcript += event.results[i][0].transcript;
+                    }
+                    document.getElementById('speech-transcript').innerText = `"${transcript}"`;
+                    
+                    // Basic accuracy estimate against current passage text
+                    const fullText = state.currentStory.text.join(' ').toLowerCase();
+                    const wordsSpoken = transcript.toLowerCase().split(' ').filter(w => w.length > 2);
+                    let matchedCount = 0;
+                    wordsSpoken.forEach(w => {
+                        if (fullText.includes(w)) matchedCount++;
+                    });
+                    const acc = wordsSpoken.length > 0 ? Math.min(100, Math.round((matchedCount / wordsSpoken.length) * 100)) : 0;
+                    document.getElementById('speech-accuracy').innerText = `Match Accuracy: ${acc}%`;
+                };
+
+                state.speechRec.onerror = () => {
+                    toggleVoiceRecording();
+                };
+            } else {
+                document.getElementById('btn-mic-rec').style.display = 'none';
+            }
+        }
+
+        function toggleVoiceRecording() {
+            if (!state.speechRec) return;
+
+            const feedbackCard = document.getElementById('voice-feedback-card');
+            const micLabel = document.getElementById('mic-label');
+
+            if (state.isRecording) {
+                state.speechRec.stop();
+                state.isRecording = false;
+                feedbackCard.classList.add('hidden');
+                micLabel.innerText = 'Read Aloud Practice';
+            } else {
+                state.speechRec.start();
+                state.isRecording = true;
+                feedbackCard.classList.remove('hidden');
+                micLabel.innerText = 'Stop Recording';
+            }
+        }
+
+        /* ================= COMPREHENSION QUIZ ================= */
+        function openComprehensionQuiz() {
+            const modal = document.getElementById('quiz-modal');
+            const body = document.getElementById('quiz-body');
+            const quizList = state.currentStory.quiz;
+
+            if (!quizList || quizList.length === 0) return;
+
+            let quizHTML = '';
+            quizList.forEach((q, qIdx) => {
+                quizHTML += `
+                    <div class="space-y-3 bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                        <p class="font-bold text-white text-sm">${qIdx + 1}. ${q.question}</p>
+                        <div class="space-y-2">
+                            ${q.options.map((opt, optIdx) => `
+                                <button onclick="checkQuizAnswer(${qIdx}, ${optIdx}, ${q.answer})" id="q-${qIdx}-opt-${optIdx}" class="w-full text-left p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-200 hover:border-brand-500 transition">
+                                    ${opt}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            body.innerHTML = quizHTML;
+            modal.classList.remove('hidden');
+        }
+
+        function closeQuizModal() {
+            document.getElementById('quiz-modal').classList.add('hidden');
+        }
+
+        function checkQuizAnswer(qIdx, selectedIdx, correctIdx) {
+            const selectedBtn = document.getElementById(`q-${qIdx}-opt-${selectedIdx}`);
+            if (selectedIdx === correctIdx) {
+                selectedBtn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-400');
+                speakText("Correct!");
+                addXP(25);
+                confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
+            } else {
+                selectedBtn.classList.add('bg-rose-600', 'text-white', 'border-rose-400');
+                speakText("Not quite! Try again.");
+            }
+        }
+
+        /* ================= MINI GAME: VOCAB MATCH ================= */
+        function initMatchGame() {
+            const grid = document.getElementById('match-cards-grid');
+            grid.innerHTML = '';
+
+            // Aggregate vocabulary words from database
+            let pairs = [];
+            storyDatabase.forEach(s => {
+                Object.keys(s.vocab).forEach(vKey => {
+                    pairs.push({ word: vKey, def: s.vocab[vKey].definition });
+                });
+            });
+
+            // Pick 4 random terms
+            const selected = pairs.sort(() => 0.5 - Math.random()).slice(0, 4);
+            
+            let cardDeck = [];
+            selected.forEach((item, idx) => {
+                cardDeck.push({ id: idx, type: 'word', content: item.word });
+                cardDeck.push({ id: idx, type: 'def', content: item.def });
+            });
+
+            // Shuffle deck
+            cardDeck.sort(() => 0.5 - Math.random());
+
+            let selectedFirst = null;
+
+            cardDeck.forEach((card, index) => {
+                const tile = document.createElement('button');
+                tile.className = "p-4 bg-slate-900 border-2 border-slate-700 hover:border-brand-500 rounded-2xl text-xs font-bold text-slate-200 min-h-[100px] flex items-center justify-center text-center transition active:scale-95 shadow-lg";
+                tile.innerText = card.content;
+
+                tile.onclick = () => {
+                    if (tile.disabled) return;
+
+                    tile.classList.add('border-brand-400', 'bg-brand-900/40');
+
+                    if (!selectedFirst) {
+                        selectedFirst = { card, tile };
+                    } else {
+                        if (selectedFirst.card.id === card.id && selectedFirst.card.type !== card.type) {
+                            // MATCH!
+                            tile.classList.add('bg-emerald-600', 'border-emerald-400', 'text-white');
+                            selectedFirst.tile.classList.add('bg-emerald-600', 'border-emerald-400', 'text-white');
+                            tile.disabled = true;
+                            selectedFirst.tile.disabled = true;
+                            selectedFirst = null;
+
+                            state.gameScore += 50;
+                            document.getElementById('game-score').innerText = state.gameScore;
+                            addXP(30);
+                            speakText("Match found!");
+                        } else {
+                            // NO MATCH
+                            setTimeout(() => {
+                                tile.classList.remove('border-brand-400', 'bg-brand-900/40');
+                                selectedFirst.tile.classList.remove('border-brand-400', 'bg-brand-900/40');
+                                selectedFirst = null;
+                            }, 500);
+                        }
+                    }
+                };
+                grid.appendChild(tile);
+            });
+        }
+
+        /* ================= GAMIFICATION & STATS ================= */
+        function addXP(amount) {
+            state.xp += amount;
+            document.getElementById('user-xp').innerText = state.xp;
+
+            // Level up threshold check (Every 200 XP = 1 Level)
+            const newLevel = Math.floor(state.xp / 200) + 1;
+            if (newLevel > state.level) {
+                state.level = newLevel;
+                document.getElementById('user-level').innerText = state.level;
+                confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
+            }
+        }
+
+        function renderBadges() {
+            const badges = [
+                { name: "Word Smith", desc: "Mastered 10 target vocabulary words", icon: "book-marked", unlocked: true },
+                { name: "Speed Reader", desc: "Achieved 120+ WPM reading rate", icon: "zap", unlocked: true },
+                { name: "Master Explorer", desc: "Completed 5 stories across all topics", icon: "compass", unlocked: false },
+                { name: "Quiz Champion", desc: "Scored 100% on 3 story quizzes", icon: "trophy", unlocked: true }
+            ];
+
+            const grid = document.getElementById('badges-grid');
+            grid.innerHTML = '';
+
+            badges.forEach(b => {
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-2xl border flex items-center gap-3 ${b.unlocked ? 'bg-slate-800/90 border-quest-amber/40 text-white' : 'bg-slate-900/50 border-slate-800 text-slate-500 opacity-60'}`;
+                card.innerHTML = `
+                    <div class="w-10 h-10 rounded-xl ${b.unlocked ? 'bg-quest-amber/20 text-quest-amber' : 'bg-slate-800 text-slate-600'} flex items-center justify-center font-bold">
+                        <i data-lucide="${b.icon}" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold">${b.name}</div>
+                        <div class="text-xs text-slate-400">${b.desc}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

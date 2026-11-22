@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alphabet & Reading Adventure!</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts: Fredoka & Quicksand -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Fredoka', 'Quicksand', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Bounce animations and pulse helpers */
+        @keyframes gentle-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        @keyframes pop-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-pop {
+            animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .animate-bounce-gentle {
+            animation: gentle-bounce 2s infinite ease-in-out;
+        }
+
+        .active-letter-highlight {
+            transform: scale(1.15);
+            background-color: #FDE047 !important;
+            border-color: #EAB308 !important;
+            box-shadow: 0 10px 25px -5px rgba(234, 179, 8, 0.4);
+        }
+
+        /* Custom scrollbar for word selector */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-amber-50 min-h-screen flex flex-col text-slate-800 overflow-x-hidden">
+
+    <!-- Top Header & Navigation -->
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b-4 border-amber-200 shadow-md px-4 py-3">
+        <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            
+            <!-- App Logo / Title -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('alphabet')">
+                <div class="w-12 h-12 bg-rose-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold shadow-lg transform -rotate-6">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-rose-500 via-amber-500 to-indigo-600 bg-clip-text text-transparent">
+                        ABC Kids Reading!
+                    </h1>
+                    <p class="text-xs text-slate-500 font-bold tracking-wider">FUN PHONICS & WORDS</p>
+                </div>
+            </div>
+
+            <!-- Mode Switcher Navigation -->
+            <nav class="flex items-center bg-amber-100 p-1.5 rounded-full border-2 border-amber-300 w-full sm:w-auto justify-around">
+                <button id="nav-alphabet" onclick="switchTab('alphabet')" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm sm:text-base transition-all bg-amber-500 text-white shadow-md">
+                    <i class="fa-solid fa-[#font] fa-font"></i>
+                    <span>A-Z Grid</span>
+                </button>
+                <button id="nav-words" onclick="switchTab('words')" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm sm:text-base text-amber-800 hover:bg-amber-200 transition-all">
+                    <i class="fa-solid fa-[#book-open] fa-book-open"></i>
+                    <span>CVC Words</span>
+                </button>
+                <button id="nav-quiz" onclick="switchTab('quiz')" class="nav-btn flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm sm:text-base text-amber-800 hover:bg-amber-200 transition-all">
+                    <i class="fa-solid fa-[#gamepad] fa-gamepad"></i>
+                    <span>Fun Quiz</span>
+                </button>
+            </nav>
+
+            <!-- Audio Settings / Voice Feedback -->
+            <div class="hidden md:flex items-center gap-2 bg-indigo-50 px-3 py-1.5 rounded-xl border border-indigo-200">
+                <button id="voice-speed-btn" onclick="toggleSpeechRate()" class="text-xs font-bold text-indigo-700 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 shadow-sm hover:bg-indigo-100">
+                    Speed: <span id="speed-label">Normal</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-5xl mx-auto w-full p-4 sm:p-6">
+
+        <!-- ================= TAB 1: ALPHABET GRID ================= -->
+        <section id="tab-alphabet" class="tab-content space-y-6">
+            <!-- Instruction Banner -->
+            <div class="bg-gradient-to-r from-teal-400 to-emerald-500 rounded-3xl p-4 sm:p-6 text-white shadow-xl flex items-center justify-between border-4 border-teal-200">
+                <div class="space-y-1">
+                    <h2 class="text-2xl sm:text-3xl font-extrabold flex items-center gap-2">
+                        <span>Explore the Alphabet!</span> 
+                        <span class="inline-block animate-bounce">🎨</span>
+                    </h2>
+                    <p class="text-teal-50 text-sm sm:text-base font-medium">Tap any letter card to hear its name, sound, and word!</p>
+                </div>
+                <button onclick="speakText('Tap a letter to learn its sound and word!')" class="w-12 h-12 bg-white/20 hover:bg-white/30 rounded-2xl flex items-center justify-center text-2xl transition">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+
+            <!-- Alphabet Cards Grid -->
+            <div id="alphabet-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <!-- Javascript will dynamically inject letter cards here -->
+            </div>
+        </section>
+
+
+        <!-- ================= TAB 2: CVC / SIGHT WORDS PRACTICE ================= -->
+        <section id="tab-words" class="tab-content hidden space-y-6">
+            
+            <!-- Category Header / Selection -->
+            <div class="bg-gradient-to-r from-sky-400 to-indigo-500 rounded-3xl p-4 sm:p-6 text-white shadow-xl border-4 border-sky-200">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold flex items-center gap-2">
+                            <span>Phonics & Word Sound Out</span> 
+                            <span class="inline-block animate-bounce">📖</span>
+                        </h2>
+                        <p class="text-sky-100 text-sm sm:text-base">Tap the sound buttons to blend letters into words!</p>
+                    </div>
+                </div>
+
+                <!-- Word Quick Select Bar -->
+                <div id="word-quick-select" class="flex gap-2 overflow-x-auto no-scrollbar pt-4 pb-2">
+                    <!-- Quick select pills generated dynamically -->
+                </div>
+            </div>
+
+            <!-- Big Interactive Word Reader Card -->
+            <div class="bg-white rounded-3xl border-4 border-indigo-200 p-6 sm:p-10 shadow-2xl flex flex-col items-center justify-center text-center relative overflow-hidden">
+                
+                <!-- Background decorative element -->
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full blur-2xl pointer-events-none"></div>
+
+                <!-- Image / Emoji Container -->
+                <div id="word-display-icon" class="text-8xl sm:text-9xl my-4 transition-transform transform hover:scale-110 cursor-pointer duration-300 filter drop-shadow-md">
+                    🐱
+                </div>
+
+                <!-- Individual Highlightable Letters Box -->
+                <div id="word-letters-container" class="flex items-center justify-center gap-2 sm:gap-4 my-6">
+                    <!-- Letter tiles dynamically loaded here -->
+                </div>
+
+                <!-- Word Sound-out Action Buttons -->
+                <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-4">
+                    <button id="btn-sound-out" onclick="soundOutCurrentWord()" class="px-6 py-3 bg-amber-400 hover:bg-amber-500 text-amber-950 rounded-2xl font-bold text-lg sm:text-xl shadow-lg border-b-4 border-amber-600 flex items-center gap-2 transition active:scale-95">
+                        <i class="fa-solid fa-spell-check"></i>
+                        <span>Sound Out</span>
+                    </button>
+
+                    <button id="btn-read-full" onclick="readCurrentWord()" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg sm:text-xl shadow-lg border-b-4 border-indigo-800 flex items-center gap-2 transition active:scale-95">
+                        <i class="fa-solid fa-volume-high"></i>
+                        <span>Read Word</span>
+                    </button>
+
+                    <button id="btn-next-word" onclick="nextWord()" class="px-5 py-3 bg-teal-500 hover:bg-teal-600 text-white rounded-2xl font-bold text-lg sm:text-xl shadow-lg border-b-4 border-teal-700 flex items-center gap-2 transition active:scale-95">
+                        <span>Next</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= TAB 3: FUN QUIZ GAME ================= -->
+        <section id="tab-quiz" class="tab-content hidden space-y-6">
+            
+            <!-- Quiz Control Header & Scoreboard -->
+            <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl p-4 sm:p-6 text-white shadow-xl border-4 border-purple-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold flex items-center gap-2">
+                        <span>Find The Match!</span> 
+                        <span class="inline-block animate-bounce">🎯</span>
+                    </h2>
+                    <p class="text-purple-100 text-sm sm:text-base">Listen carefully and tap the right card!</p>
+                </div>
+
+                <!-- Score Counter -->
+                <div class="flex items-center gap-4 bg-white/20 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white/30">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-star text-yellow-300 text-2xl"></i>
+                        <span id="quiz-score" class="text-2xl font-bold">0</span>
+                    </div>
+                    <div class="h-6 w-0.5 bg-white/30"></div>
+                    <button onclick="repeatQuizPrompt()" class="text-xs bg-white text-purple-700 px-3 py-1.5 rounded-xl font-bold hover:bg-purple-50 transition shadow-sm flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>Repeat</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quiz Prompt Card -->
+            <div class="bg-white rounded-3xl border-4 border-purple-200 p-6 shadow-lg text-center space-y-4">
+                <p class="text-lg text-slate-500 font-bold uppercase tracking-wider">Listen to the question:</p>
+                <div class="flex items-center justify-center gap-4">
+                    <button onclick="repeatQuizPrompt()" class="w-16 h-16 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl text-2xl shadow-xl flex items-center justify-center transform hover:scale-105 active:scale-95 transition">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                    <span id="quiz-question-text" class="text-2xl sm:text-3xl font-bold text-slate-800">
+                        "Find the letter B!"
+                    </span>
+                </div>
+            </div>
+
+            <!-- Quiz Choices Grid -->
+            <div id="quiz-options-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <!-- Quiz choice cards injected dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- App Footer -->
+    <footer class="bg-white border-t-2 border-amber-200 py-4 px-4 text-center text-slate-400 text-xs font-semibold">
+        <p>Built for early reading & phonics practice • Interactive Learning for Toddlers & Kids (3-6)</p>
+    </footer>
+
+    <!-- App Logic Script -->
+    <script>
+        /* ================= DATA STRUCTURES ================= */
+        const alphabetData = [
+            { letter: 'A', phonic: 'æ', word: 'Apple', icon: '🍎', color: 'bg-rose-100 border-rose-300 text-rose-700' },
+            { letter: 'B', phonic: 'b', word: 'Ball', icon: '⚽', color: 'bg-sky-100 border-sky-300 text-sky-700' },
+            { letter: 'C', phonic: 'k', word: 'Cat', icon: '🐱', color: 'bg-amber-100 border-amber-300 text-amber-700' },
+            { letter: 'D', phonic: 'd', word: 'Dog', icon: '🐶', color: 'bg-emerald-100 border-emerald-300 text-emerald-700' },
+            { letter: 'E', phonic: 'ɛ', word: 'Elephant', icon: '🐘', color: 'bg-purple-100 border-purple-300 text-purple-700' },
+            { letter: 'F', phonic: 'f', word: 'Fish', icon: '🐟', color: 'bg-teal-100 border-teal-300 text-teal-700' },
+            { letter: 'G', phonic: 'g', word: 'Gorilla', icon: '🦍', color: 'bg-green-100 border-green-300 text-green-700' },
+            { letter: 'H', phonic: 'h', word: 'Hat', icon: '🎩', color: 'bg-indigo-100 border-indigo-300 text-indigo-700' },
+            { letter: 'I', phonic: 'ɪ', word: 'Iguana', icon: '🦎', color: 'bg-lime-100 border-lime-300 text-lime-700' },
+            { letter: 'J', phonic: 'dʒ', word: 'Juice', icon: '🧃', color: 'bg-orange-100 border-orange-300 text-orange-700' },
+            { letter: 'K', phonic: 'k', word: 'Kangaroo', icon: '🦘', color: 'bg-yellow-100 border-yellow-300 text-yellow-700' },
+            { letter: 'L', phonic: 'l', word: 'Lion', icon: '🦁', color: 'bg-amber-100 border-amber-300 text-amber-800' },
+            { letter: 'M', phonic: 'm', word: 'Monkey', icon: '🐵', color: 'bg-amber-100 border-amber-300 text-amber-900' },
+            { letter: 'N', phonic: 'n', word: 'Nest', icon: '🪹', color: 'bg-stone-100 border-stone-300 text-stone-700' },
+            { letter: 'O', phonic: 'ɒ', word: 'Octopus', icon: '🐙', color: 'bg-pink-100 border-pink-300 text-pink-700' },
+            { letter: 'P', phonic: 'p', word: 'Pig', icon: '🐷', color: 'bg-rose-100 border-rose-300 text-rose-600' },
+            { letter: 'Q', phonic: 'kw', word: 'Queen', icon: '👑', color: 'bg-fuchsia-100 border-fuchsia-300 text-fuchsia-700' },
+            { letter: 'R', phonic: 'r', word: 'Rabbit', icon: '🐰', color: 'bg-cyan-100 border-cyan-300 text-cyan-700' },
+            { letter: 'S', phonic: 's', word: 'Sun', icon: '☀️', color: 'bg-yellow-100 border-yellow-300 text-yellow-600' },
+            { letter: 'T', phonic: 't', word: 'Tiger', icon: '🐯', color: 'bg-orange-100 border-orange-300 text-orange-700' },
+            { letter: 'U', phonic: 'ʌ', word: 'Umbrella', icon: '☂️', color: 'bg-violet-100 border-violet-300 text-violet-700' },
+            { letter: 'V', phonic: 'v', word: 'Van', icon: '🚐', color: 'bg-blue-100 border-blue-300 text-blue-700' },
+            { letter: 'W', phonic: 'w', word: 'Watermelon', icon: '🍉', color: 'bg-red-100 border-red-300 text-red-700' },
+            { letter: 'X', phonic: 'ks', word: 'Xylophone', icon: '🎼', color: 'bg-teal-100 border-teal-300 text-teal-800' },
+            { letter: 'Y', phonic: 'j', word: 'Yak', icon: '🐂', color: 'bg-stone-100 border-stone-300 text-stone-800' },
+            { letter: 'Z', phonic: 'z', word: 'Zebra', icon: '🦓', color: 'bg-slate-200 border-slate-400 text-slate-800' }
+        ];
+
+        const cvcWords = [
+            { word: 'CAT', letters: ['C', 'A', 'T'], icon: '🐱' },
+            { word: 'DOG', letters: ['D', 'O', 'G'], icon: '🐶' },
+            { word: 'SUN', letters: ['S', 'U', 'N'], icon: '☀️' },
+            { word: 'BUS', letters: ['B', 'U', 'S'], icon: '🚌' },
+            { word: 'BED', letters: ['B', 'E', 'D'], icon: '🛏️' },
+            { word: 'RED', letters: ['R', 'E', 'D'], icon: '🔴' },
+            { word: 'PIG', letters: ['P', 'I', 'G'], icon: '🐷' },
+            { word: 'BUG', letters: ['B', 'U', 'G'], icon: '🐛' },
+            { word: 'CUP', letters: ['C', 'U', 'P'], icon: '🥤' },
+            { word: 'HAT', letters: ['H', 'A', 'T'], icon: '🎩' },
+            { word: 'BOX', letters: ['B', 'O', 'X'], icon: '📦' },
+            { word: 'PEN', letters: ['P', 'E', 'N'], icon: '🖊️' }
+        ];
+
+        /* ================= STATE VARIABLES ================= */
+        let currentTab = 'alphabet';
+        let currentWordIndex = 0;
+        let quizScore = 0;
+        let currentQuizItem = null;
+        let speechRate = 0.85; // Default child-friendly rate
+        let synth = window.speechSynthesis;
+
+        /* ================= INITIALIZATION ================= */
+        window.addEventListener('DOMContentLoaded', () => {
+            renderAlphabetGrid();
+            renderWordQuickSelect();
+            loadWord(0);
+            initQuiz();
+        });
+
+        /* ================= SPEECH SYNTHESIS ENGINE ================= */
+        function speakText(text, onEndCallback = null) {
+            if (!synth) return;
+
+            // Cancel any ongoing speech
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = speechRate;
+            utterance.pitch = 1.1; // Slightly higher pitched for friendly tone
+
+            // Choose an English voice if available
+            const voices = synth.getVoices();
+            const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Natural') || v.name.includes('Google')));
+            if (preferredVoice) utterance.voice = preferredVoice;
+
+            if (onEndCallback) {
+                utterance.onend = onEndCallback;
+            }
+
+            synth.speak(utterance);
+        }
+
+        function toggleSpeechRate() {
+            if (speechRate === 0.85) {
+                speechRate = 0.6;
+                document.getElementById('speed-label').innerText = 'Slow';
+            } else {
+                speechRate = 0.85;
+                document.getElementById('speed-label').innerText = 'Normal';
+            }
+            speakText(`Speed set to ${document.getElementById('speed-label').innerText}`);
+        }
+
+        /* ================= TAB NAVIGATION ================= */
+        function switchTab(tabId) {
+            currentTab = tabId;
+
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            
+            // Reset button styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-amber-500', 'text-white', 'shadow-md');
+                btn.classList.add('text-amber-800');
+            });
+
+            // Show selected tab content
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            // Highlight active button
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            activeBtn.classList.add('bg-amber-500', 'text-white', 'shadow-md');
+            activeBtn.classList.remove('text-amber-800');
+
+            // Announce tab name
+            if (tabId === 'alphabet') speakText("Alphabet Grid");
+            if (tabId === 'words') speakText("Phonics and Sight Words");
+            if (tabId === 'quiz') {
+                speakText("Quiz Game");
+                generateQuizQuestion();
+            }
+        }
+
+        /* ================= TAB 1: ALPHABET FUNCTIONS ================= */
+        function renderAlphabetGrid() {
+            const grid = document.getElementById('alphabet-grid');
+            grid.innerHTML = '';
+
+            alphabetData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `${item.color} rounded-3xl p-4 border-4 shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1.5 active:scale-95 cursor-pointer flex flex-col items-center justify-between text-center select-none animate-pop`;
+                
+                card.innerHTML = `
+                    <div class="text-xs font-extrabold uppercase px-2 py-0.5 rounded-full bg-white/60 mb-1">
+                        ${item.letter}${item.letter.toLowerCase()}
+                    </div>
+                    <div class="text-4xl sm:text-5xl font-extrabold my-1">${item.letter}</div>
+                    <div class="text-3xl my-1 hover:scale-125 transition-transform">${item.icon}</div>
+                    <div class="text-sm font-bold mt-1">${item.word}</div>
+                `;
+
+                card.onclick = () => playAlphabetSound(item);
+                grid.appendChild(card);
+            });
+        }
+
+        function playAlphabetSound(item) {
+            // Speech phrasing: "A says [word], [word]"
+            const phrase = `${item.letter}. ${item.letter} for ${item.word}! ${item.icon}`;
+            speakText(phrase);
+        }
+
+        /* ================= TAB 2: CVC WORDS FUNCTIONS ================= */
+        function renderWordQuickSelect() {
+            const container = document.getElementById('word-quick-select');
+            container.innerHTML = '';
+
+            cvcWords.forEach((item, index) => {
+                const pill = document.createElement('button');
+                pill.className = `px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap border-2 transition ${index === currentWordIndex ? 'bg-white text-indigo-700 border-white shadow-md' : 'bg-sky-500/40 text-white border-sky-300 hover:bg-sky-500/60'}`;
+                pill.innerText = `${item.icon} ${item.word}`;
+                pill.onclick = () => loadWord(index);
+                container.appendChild(pill);
+            });
+        }
+
+        function loadWord(index) {
+            currentWordIndex = index;
+            const wordObj = cvcWords[index];
+
+            // Update Icon
+            document.getElementById('word-display-icon').innerText = wordObj.icon;
+
+            // Render Letter Tiles
+            const container = document.getElementById('word-letters-container');
+            container.innerHTML = '';
+
+            wordObj.letters.forEach((char, lIndex) => {
+                const tile = document.createElement('button');
+                tile.id = `letter-tile-${lIndex}`;
+                tile.className = `w-16 h-20 sm:w-24 sm:h-28 bg-amber-100 border-4 border-amber-300 rounded-2xl flex items-center justify-center text-4xl sm:text-6xl font-extrabold text-amber-800 shadow-md transition-all duration-200 transform hover:scale-105 active:scale-95`;
+                tile.innerText = char;
+                tile.onclick = () => speakText(char);
+                container.appendChild(tile);
+            });
+
+            // Refresh Pills
+            renderWordQuickSelect();
+        }
+
+        function soundOutCurrentWord() {
+            const wordObj = cvcWords[currentWordIndex];
+            let step = 0;
+
+            function highlightNextLetter() {
+                // Clear all highlights
+                wordObj.letters.forEach((_, idx) => {
+                    const tile = document.getElementById(`letter-tile-${idx}`);
+                    if (tile) tile.classList.remove('active-letter-highlight');
+                });
+
+                if (step < wordObj.letters.length) {
+                    const currentTile = document.getElementById(`letter-tile-${step}`);
+                    if (currentTile) currentTile.classList.add('active-letter-highlight');
+                    
+                    speakText(wordObj.letters[step], () => {
+                        step++;
+                        setTimeout(highlightNextLetter, 200);
+                    });
+                } else {
+                    // Finally speak full word
+                    setTimeout(() => {
+                        speakText(wordObj.word);
+                    }, 300);
+                }
+            }
+
+            highlightNextLetter();
+        }
+
+        function readCurrentWord() {
+            const wordObj = cvcWords[currentWordIndex];
+            speakText(`${wordObj.word}! ${wordObj.icon}`);
+        }
+
+        function nextWord() {
+            currentWordIndex = (currentWordIndex + 1) % cvcWords.length;
+            loadWord(currentWordIndex);
+            readCurrentWord();
+        }
+
+        /* ================= TAB 3: QUIZ GAME FUNCTIONS ================= */
+        function initQuiz() {
+            quizScore = 0;
+            document.getElementById('quiz-score').innerText = quizScore;
+        }
+
+        function generateQuizQuestion() {
+            const container = document.getElementById('quiz-options-container');
+            container.innerHTML = '';
+
+            // 50% chance of letter question vs word question
+            const isLetterQuiz = Math.random() > 0.4;
+
+            if (isLetterQuiz) {
+                // Pick random target letter
+                const target = alphabetData[Math.floor(Math.random() * alphabetData.length)];
+                currentQuizItem = { type: 'letter', target: target };
+
+                // Get 3 random distractors
+                const distractors = alphabetData.filter(a => a.letter !== target.letter)
+                                                .sort(() => 0.5 - Math.random())
+                                                .slice(0, 3);
+
+                const options = [target, ...distractors].sort(() => 0.5 - Math.random());
+
+                // Set Question UI
+                document.getElementById('quiz-question-text').innerText = `Find the letter ${target.letter}!`;
+
+                // Render Option Cards
+                options.forEach(option => {
+                    const card = document.createElement('div');
+                    card.className = `${option.color} rounded-3xl p-6 border-4 shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 active:scale-95 cursor-pointer flex flex-col items-center justify-center text-center select-none animate-pop min-h-[140px]`;
+                    card.innerHTML = `<span class="text-6xl font-extrabold">${option.letter}</span>`;
+                    card.onclick = () => handleQuizAnswer(option.letter === target.letter, card);
+                    container.appendChild(card);
+                });
+
+            } else {
+                // Pick random CVC word
+                const target = cvcWords[Math.floor(Math.random() * cvcWords.length)];
+                currentQuizItem = { type: 'word', target: target };
+
+                const distractors = cvcWords.filter(w => w.word !== target.word)
+                                            .sort(() => 0.5 - Math.random())
+                                            .slice(0, 3);
+
+                const options = [target, ...distractors].sort(() => 0.5 - Math.random());
+
+                document.getElementById('quiz-question-text').innerText = `Find the word ${target.word}!`;
+
+                options.forEach(option => {
+                    const card = document.createElement('div');
+                    card.className = `bg-indigo-50 border-indigo-300 text-indigo-800 rounded-3xl p-6 border-4 shadow-lg hover:shadow-2xl transition-all transform hover:-translate-y-2 active:scale-95 cursor-pointer flex flex-col items-center justify-center text-center select-none animate-pop min-h-[140px]`;
+                    card.innerHTML = `
+                        <span class="text-4xl mb-2">${option.icon}</span>
+                        <span class="text-3xl font-extrabold">${option.word}</span>
+                    `;
+                    card.onclick = () => handleQuizAnswer(option.word === target.word, card);
+                    container.appendChild(card);
+                });
+            }
+
+            // Speak Prompt
+            repeatQuizPrompt();
+        }
+
+        function repeatQuizPrompt() {
+            if (!currentQuizItem) return;
+            if (currentQuizItem.type === 'letter') {
+                speakText(`Can you find the letter ${currentQuizItem.target.letter}?`);
+            } else {
+                speakText(`Can you find the word ${currentQuizItem.target.word}?`);
+            }
+        }
+
+        function handleQuizAnswer(isCorrect, cardElement) {
+            if (isCorrect) {
+                // Success Audio & Confetti
+                speakText("Yay! Great job! You found it!");
+                
+                // Update Score
+                quizScore += 10;
+                document.getElementById('quiz-score').innerText = quizScore;
+
+                // Visual Feedback
+                cardElement.classList.add('bg-emerald-400', 'text-white', 'border-emerald-600', 'scale-105');
+                
+                // Fire celebratory confetti
+                confetti({
+                    particleCount: 70,
+                    spread: 60,
+                    origin: { y: 0.6 }
+                });
+
+                // Generate new question after brief delay
+                setTimeout(() => {
+                    generateQuizQuestion();
+                }, 1800);
+
+            } else {
+                // Wrong answer feedback
+                speakText("Oops! Try again!");
+                cardElement.classList.add('bg-rose-200', 'border-rose-400', 'animate-bounce');
+                setTimeout(() => {
+                    cardElement.classList.remove('animate-bounce');
+                }, 800);
+            }
+        }
+    </script>
+</body>
+</html>

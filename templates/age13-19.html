@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LexiQuest — Interactive Reading & Comprehension</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Newsreader', 'serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        // Crisp, flat modern palette with zero gradients
+                        surface: {
+                            light: '#FFFFFF',
+                            dark: '#14171F'
+                        },
+                        canvas: {
+                            light: '#F4F5F7',
+                            dark: '#0B0D12'
+                        },
+                        accent: {
+                            indigo: '#4F46E5',
+                            indigoDark: '#6366F1',
+                            emerald: '#059669',
+                            emeraldDark: '#10B981',
+                            amber: '#D97706',
+                            amberDark: '#F59E0B',
+                            rose: '#E11D48',
+                            roseDark: '#F43F5E'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom SVG & Micro-animations (Strictly solid colors, no gradients) */
+        @keyframes pulseSlow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.65; transform: scale(0.97); }
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        @keyframes scanLine {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(130px); }
+            100% { transform: translateY(0px); }
+        }
+        @keyframes blinkCursor {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        @keyframes spinSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes shakeWrong {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        @keyframes popSuccess {
+            0% { transform: scale(0.96); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .anim-pulse-slow { animation: pulseSlow 3s infinite ease-in-out; }
+        .anim-float { animation: floatSlow 4s infinite ease-in-out; }
+        .anim-scan { animation: scanLine 4.5s infinite ease-in-out; }
+        .anim-blink { animation: blinkCursor 1s infinite; }
+        .anim-spin-slow { animation: spinSlow 24s linear infinite; transform-origin: center; }
+        .anim-shake { animation: shakeWrong 0.35s ease-in-out; }
+        .anim-pop { animation: popSuccess 0.3s ease-out; }
+
+        /* Smooth transitions for theme switching and UI states */
+        body, .theme-transition {
+            transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+        }
+
+        /* Custom subtle scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #2D3342; }
+    </style>
+</head>
+<body class="bg-canvas-light dark:bg-canvas-dark text-slate-900 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white">
+
+    <!-- Top Navigation & Player HUD -->
+    <header class="sticky top-0 z-30 bg-surface-light dark:bg-surface-dark border-b border-slate-200 dark:border-slate-800 theme-transition">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            <!-- Brand Logo -->
+            <button onclick="app.goHome()" class="flex items-center gap-2.5 text-left group focus:outline-none">
+                <div class="w-9 h-9 rounded-lg bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-white font-bold tracking-tight transition-transform group-hover:scale-105">
+                    LQ
+                </div>
+                <div>
+                    <span class="font-bold text-base sm:text-lg tracking-tight block leading-none">LexiQuest</span>
+                    <span class="text-[11px] font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">Reader Arena</span>
+                </div>
+            </button>
+
+            <!-- Gamification Stats Bar -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <!-- Streak Counter -->
+                <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-400" title="Current Answer Streak">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    <span id="hud-streak" class="font-mono text-xs sm:text-sm font-semibold">0</span>
+                </div>
+
+                <!-- XP & Level Progress -->
+                <div class="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                    <div class="flex flex-col">
+                        <div class="flex items-center justify-between gap-3 text-[11px] font-mono font-semibold">
+                            <span id="hud-rank" class="text-indigo-600 dark:text-indigo-400">LVL 1 · INITIATE</span>
+                            <span id="hud-xp-text" class="text-slate-600 dark:text-slate-300">0 / 300 XP</span>
+                        </div>
+                        <div class="w-24 sm:w-32 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mt-1">
+                            <div id="hud-xp-bar" class="h-full bg-indigo-600 dark:bg-indigo-500 transition-all duration-500 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Crisp Light / Dark Mode Toggle -->
+                <button id="theme-toggle" onclick="app.toggleTheme()" aria-label="Toggle Light or Dark Mode" class="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <!-- Sun Icon (shown in dark mode) -->
+                    <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+                    </svg>
+                    <!-- Moon Icon (shown in light mode) -->
+                    <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10">
+
+        <!-- VIEW 1: CHAPTER SELECTION HUB -->
+        <section id="view-hub" class="space-y-8">
+            <div class="bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 theme-transition">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="space-y-2 max-w-2xl">
+                        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-mono font-semibold uppercase tracking-wider border border-indigo-200 dark:border-indigo-800">
+                            <span>Reading & Inference Training</span>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+                            Choose Your Narrative Briefing
+                        </h1>
+                        <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed">
+                            Read high-stakes scenarios at your natural pace, track your Words Per Minute (WPM), and decode nuance, vocabulary, and subtext to earn XP.
+                        </p>
+                    </div>
+                    <div class="flex sm:flex-row flex-col gap-3 shrink-0">
+                        <div class="px-4 py-3 rounded-xl bg-canvas-light dark:bg-canvas-dark border border-slate-200 dark:border-slate-800 text-center">
+                            <span class="block text-xs font-mono text-slate-500 dark:text-slate-400 uppercase">Avg Speed</span>
+                            <span id="hub-avg-wpm" class="text-xl font-bold font-mono text-slate-900 dark:text-white">-- WPM</span>
+                        </div>
+                        <div class="px-4 py-3 rounded-xl bg-canvas-light dark:bg-canvas-dark border border-slate-200 dark:border-slate-800 text-center">
+                            <span class="block text-xs font-mono text-slate-500 dark:text-slate-400 uppercase">Completed</span>
+                            <span id="hub-completed-count" class="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400">0 / 3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapter Cards Grid -->
+            <div id="chapter-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </section>
+
+        <!-- VIEW 2: ACTIVE READING & CHALLENGE ARENA -->
+        <section id="view-arena" class="hidden space-y-6">
+            <!-- Top Arena Bar: Back button, Chapter Title, Live WPM & Timer -->
+            <div class="flex flex-wrap items-center justify-between gap-4 bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 theme-transition">
+                <button onclick="app.goHome()" class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors py-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5m7-7l-7 7 7 7"/></svg>
+                    <span>All Chapters</span>
+                </button>
+
+                <div class="flex items-center gap-3">
+                    <span id="arena-genre-badge" class="text-xs font-mono font-semibold uppercase px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                        GENRE
+                    </span>
+                    <h2 id="arena-title" class="font-bold text-sm sm:text-base text-slate-900 dark:text-white">Chapter Title</h2>
+                </div>
+
+                <!-- Live Reading Telemetry -->
+                <div class="flex items-center gap-3 font-mono text-xs sm:text-sm">
+                    <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-canvas-light dark:bg-canvas-dark border border-slate-200 dark:border-slate-700">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 anim-pulse-slow"></span>
+                        <span id="timer-display" class="font-semibold">00:00</span>
+                    </div>
+                    <div class="px-2.5 py-1 rounded-md bg-canvas-light dark:bg-canvas-dark border border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 font-semibold">
+                        <span id="wpm-display">0</span> WPM
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Reactive SVG Illustration Stage -->
+            <div class="bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden theme-transition">
+                <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
+                    <span id="scene-caption">VISUAL TELEMETRY // STAGE 1 OF 3</span>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[11px]">SCENE SYNC:</span>
+                        <div class="flex gap-1" id="stage-dots">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="svg-stage" class="w-full h-52 sm:h-64 bg-slate-100 dark:bg-[#0E1117] flex items-center justify-center p-4 overflow-hidden transition-colors">
+                    <!-- Dynamic Reactive SVG injected here -->
+                </div>
+            </div>
+
+            <!-- Two-Column Workspace on Large Screens: Passage Reader & Challenge Panel -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- Narrative Reading Column (7 cols) -->
+                <div class="lg:col-span-7 bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 theme-transition">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+                        <div>
+                            <span id="passage-part-label" class="text-xs font-mono font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">PART 1 OF 3</span>
+                            <h3 id="passage-subtitle" class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5">Section Subtitle</h3>
+                        </div>
+                        <button onclick="app.toggleFocusFont()" class="text-xs font-mono px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors" title="Switch between Serif and Sans-Serif reading font">
+                            Aa Font
+                        </button>
+                    </div>
+
+                    <!-- Narrative Text Body -->
+                    <div id="passage-content" class="font-serif text-lg sm:text-[19px] leading-[1.8] text-slate-800 dark:text-slate-200 space-y-4">
+                        <!-- Rich paragraphs injected here -->
+                    </div>
+
+                    <!-- Vocabulary Spotlight Hint (Context Clue Helper) -->
+                    <div id="vocab-clue-box" class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-3">
+                        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        <div class="text-xs sm:text-sm text-amber-900 dark:text-amber-200">
+                            <span class="font-semibold">Close Reading Tip:</span> Pay attention to highlighted terms and character motivations—your analysis unlocks the next scene.
+                        </div>
+                    </div>
+
+                    <!-- Action Button to Unlock Questions -->
+                    <div id="reading-complete-bar" class="pt-2">
+                        <button onclick="app.finishReadingSegment()" class="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-semibold text-sm sm:text-base transition-all flex items-center justify-center gap-2 shadow-sm">
+                            <span>I've Finished Reading — Unlock Challenge</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Comprehension & Vocabulary Challenge Column (5 cols) -->
+                <div id="challenge-panel" class="lg:col-span-5 bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 space-y-5 theme-transition">
+                    <div class="flex items-center justify-between">
+                        <span id="question-type-badge" class="text-xs font-mono font-bold uppercase px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                            INFERENCE CHECK
+                        </span>
+                        <span id="question-counter" class="text-xs font-mono text-slate-500 dark:text-slate-400">
+                            STAGE 1 / 3
+                        </span>
+                    </div>
+
+                    <!-- Locked State Overlay before user finishes reading -->
+                    <div id="challenge-locked" class="py-10 text-center space-y-3 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl px-4">
+                        <div class="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-500 dark:text-slate-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </div>
+                        <h4 class="font-semibold text-slate-900 dark:text-white text-sm">Challenge Locked</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                            Read the passage carefully on the left. Click <strong class="text-slate-700 dark:text-slate-300">"I've Finished Reading"</strong> to record your WPM and reveal the comprehension question.
+                        </p>
+                    </div>
+
+                    <!-- Active Question Content -->
+                    <div id="challenge-active" class="hidden space-y-5">
+                        <h4 id="question-prompt" class="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">
+                            Question prompt goes here?
+                        </h4>
+
+                        <div id="options-container" class="space-y-2.5">
+                            <!-- Multiple choice buttons injected here -->
+                        </div>
+
+                        <!-- Instant Feedback Box -->
+                        <div id="feedback-box" class="hidden p-4 rounded-xl border text-sm space-y-2">
+                            <div class="flex items-center gap-2 font-bold" id="feedback-title"></div>
+                            <p id="feedback-explanation" class="text-xs sm:text-sm leading-relaxed"></p>
+                        </div>
+
+                        <!-- Next Scene / Finish Chapter Button -->
+                        <button id="next-stage-btn" onclick="app.advanceStage()" class="hidden w-full py-3 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2">
+                            <span id="next-stage-label">Continue to Part 2</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- VIEW 3: CHAPTER DEBRIEF / SUMMARY -->
+        <section id="view-summary" class="hidden max-w-2xl mx-auto">
+            <div class="bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-10 text-center space-y-6 theme-transition">
+                <div class="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+
+                <div class="space-y-1.5">
+                    <span class="text-xs font-mono font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">BRIEFING COMPLETE</span>
+                    <h2 id="summary-chapter-title" class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Chapter Complete</h2>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Your reading telemetry and comprehension diagnostics have been logged.</p>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-3 gap-3 sm:gap-4 pt-2">
+                    <div class="p-4 rounded-xl bg-canvas-light dark:bg-canvas-dark border border-slate-200 dark:border-slate-800">
+                        <span class="block text-[11px] font-mono uppercase text-slate-500 dark:text-slate-400">Reading Speed</span>
+                        <span id="summary-wpm" class="text-lg sm:text-2xl font-bold font-mono text-indigo-600 dark:text-indigo-400 mt-1 block">215 WPM</span>
+                    </div>
+                    <div class="p-4 rounded-xl bg-canvas-light dark:bg-canvas-dark border border-slate-200 dark:border-slate-800">
+                        <span class="block text-[11px] font-mono uppercase text-slate-500 dark:text-slate-400">Accuracy</span>
+                        <span id="summary-accuracy" class="text-lg sm:text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1 block">100%</span>
+                    </div>
+                    <div class="p-4 rounded-xl bg-canvas-light dark:bg-canvas-dark border border-slate-200 dark:border-slate-800">
+                        <span class="block text-[11px] font-mono uppercase text-slate-500 dark:text-slate-400">XP Earned</span>
+                        <span id="summary-xp" class="text-lg sm:text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1 block">+150 XP</span>
+                    </div>
+                </div>
+
+                <!-- Reading Pace Assessment -->
+                <div id="summary-pace-note" class="p-4 rounded-xl bg-slate-100 dark:bg-slate-800/70 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                    Solid pacing! High school readers typically average between 200 and 250 WPM on analytical fiction.
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button onclick="app.goHome()" class="flex-1 py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-semibold text-sm transition-colors">
+                        Return to Briefing Hub
+                    </button>
+                    <button onclick="app.replayChapter()" class="py-3.5 px-6 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-sm transition-colors">
+                        Replay Chapter
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800 py-5 px-4 text-center text-xs text-slate-500 dark:text-slate-400 font-mono">
+        LexiQuest Reading Studio • Designed for Focused Teen Literacy & Critical Analysis
+    </footer>
+
+    <script>
+        /**
+         * Rich Narrative Dataset: 3 Age-Appropriate Chapters (Ages 13-19)
+         * Each chapter includes 3 progressive parts, word counts, reactive SVG generators,
+         * and comprehension/vocabulary questions with detailed instant explanations.
+         */
+        const CHAPTERS = [
+            {
+                id: 'cyber-mystery',
+                genre: 'CYBER-MYSTERY',
+                accentColor: 'indigo',
+                title: 'Zero-Day at Meridian High',
+                difficulty: 'Grade 9–11 • Analytical',
+                estimatedMinutes: '3 min',
+                synopsis: 'When the district exam server locks itself down forty minutes before finals, Maya discovers the intruder left behind an encrypted acoustic signature instead of a ransom note.',
+                parts: [
+                    {
+                        subtitle: 'The Phantom Packet',
+                        sceneCaption: 'SERVER RACK 04 // ANOMALY DETECTED',
+                        paragraphs: [
+                            "At 7:18 AM, twenty-two minutes before the regional AP Chemistry exam was scheduled to unlock, the cooling fans inside Meridian High's basement server closet spun up to a deafening shriek. Maya Lin, who had arrived early to calibrate the robotics club's telemetry router, watched the status LEDs on Rack Four shift from steady emerald to a frantic, rhythmic crimson.",
+                            "She plugged her diagnostic tablet into the local console. Every student portal across the district had been quarantined behind an unfamiliar <strong class='text-indigo-600 dark:text-indigo-400 font-semibold'>ephemeral</strong> firewall—one programmed to dissolve its own source code at noon. Strangely, no data had been exfiltrated, and there was no demand for cryptocurrency. Instead, a single audio file named <em>metronome.wav</em> was looping silently on the administrative drive."
+                        ],
+                        questionType: 'VOCABULARY IN CONTEXT',
+                        prompt: 'In the second paragraph, what does the word "ephemeral" most closely suggest about the intruder’s firewall?',
+                        options: [
+                            'It was built using outdated school district encryption protocols.',
+                            'It was designed to exist only temporarily before erasing itself.',
+                            'It was broadcasting a loud alarm across every classroom speaker.',
+                            'It was permanently locking the hard drives until replaced.'
+                        ],
+                        correctIndex: 1,
+                        explanation: 'Correct! "Ephemeral" means lasting for a very short time. The passage directly reinforces this clue by stating the firewall was "programmed to dissolve its own source code at noon."'
+                    },
+                    {
+                        subtitle: 'Spectrogram Clues',
+                        sceneCaption: 'AUDIO WAVEFORM // FREQUENCY DECODED',
+                        paragraphs: [
+                            "Maya routed the silent audio file through a visual spectrogram on her tablet. To the human ear, <em>metronome.wav</em> sounded like nothing more than faint static punctuated by dull clicks. On the frequency graph, however, the clicks resolved into crisp geometric blocks—a hidden <strong class='text-indigo-600 dark:text-indigo-400 font-semibold'>steganographic</strong> message painted directly into the upper ultrasonic bands.",
+                            "When she converted the binary spikes into ASCII text, a set of coordinates appeared alongside a timestamp from three nights earlier: <em>East Wing Ventilation Shaft, Sensor 12B</em>. Someone hadn't hacked Meridian High from across the globe; they had physically bridged an Ethernet tap inside the building's ductwork—and they wanted a sharp technician to find their trail before noon."
+                        ],
+                        questionType: 'INFERENCE & EVIDENCE',
+                        prompt: 'Why does Maya conclude the intruder was physically inside the school building?',
+                        options: [
+                            'The audio file contained security camera footage from the East Wing.',
+                            'The decoded ultrasonic message pointed to a specific internal ventilation sensor and timestamp.',
+                            'The basement server door had been left unlocked with a tablet inside.',
+                            'The intruder used a student ID badge to log into the robotics router.'
+                        ],
+                        correctIndex: 1,
+                        explanation: 'Spot on. By decoding the spectrogram into coordinates referencing "East Wing Ventilation Shaft, Sensor 12B," Maya deduces someone physically tapped the network inside the ducts.'
+                    },
+                    {
+                        subtitle: 'The Whistleblower’s Gambit',
+                        sceneCaption: 'COUNTER-PATCH // SYSTEM RESTORED',
+                        paragraphs: [
+                            "Climbing a maintenance ladder behind the East Wing auditorium, Maya found a miniature Raspberry Pi transceiver magnetized to the galvanized steel duct. Taped beneath it was a laminated card belonging to Julian Vance, the district's junior network auditor who had abruptly resigned the previous week.",
+                            "Realizing Julian had triggered the temporary lockdown to expose a catastrophic unpatched flaw—one that would have leaked forty thousand student records during the live exam—Maya extracted his patch script from the transceiver. With four minutes to spare before first bell, she deployed the security fix, lifting the quarantine and silently sealing the vulnerability."
+                        ],
+                        questionType: 'CHARACTER MOTIVATION',
+                        prompt: 'What was Julian Vance’s true motivation for locking down the exam server?',
+                        options: [
+                            'He wanted to delay his own AP Chemistry exam to get extra study time.',
+                            'He intended to sell forty thousand student records to a rival district.',
+                            'He staged a harmless, temporary lockdown to force the discovery of a major data leak.',
+                            'He was testing whether Maya was qualified to take over his auditing job.'
+                        ],
+                        correctIndex: 2,
+                        explanation: 'Nailed it! Julian used an ephemeral lockdown that deleted itself at noon—without stealing data—specifically to prevent a catastrophic leak of 40,000 student records and ensure his patch was found.'
+                    }
+                ]
+            },
+            {
+                id: 'orbital-log',
+                genre: 'HARD SCI-FI',
+                accentColor: 'emerald',
+                title: 'Kepler Relay: Station Log 409',
+                difficulty: 'Grade 10–12 • Technical',
+                estimatedMinutes: '3 min',
+                synopsis: 'Aboard a solar-sail relay station orbiting Venus, flight engineer Tariq must diagnose why the deep-space laser array is drifting off-axis during a solar flare.',
+                parts: [
+                    {
+                        subtitle: 'Thermal Drift in Orbit',
+                        sceneCaption: 'ORBITAL TELEMETRY // GIMBAL OFFSET +1.4°',
+                        paragraphs: [
+                            "Sixty thousand kilometers above the sulfuric cloud tops of Venus, sunlight hits the hull of Kepler Relay like a physical weight. Flight Engineer Tariq floated beside the observation cupola, watching external radiator fins glow dull cherry-red as they bled excess heat into the vacuum.",
+                            "According to the telemetry console, the station's primary optical laser—responsible for beaming Martian rover data back to Earth—had drifted 1.4 degrees off its target vector. The gyroscope array claimed the station was perfectly level, creating a <strong class='text-emerald-600 dark:text-emerald-400 font-semibold'>paradoxical</strong> discrepancy between what the instruments reported and what the star-tracker cameras actually saw."
+                        ],
+                        questionType: 'VOCABULARY & CONTEXT',
+                        prompt: 'Why does the author describe the sensor readings as a "paradoxical discrepancy"?',
+                        options: [
+                            'The laser array was operating at twice its normal power capacity.',
+                            'Two reliable navigation systems directly contradicted each other about the station’s position.',
+                            'The radiators were freezing despite being close to the sun.',
+                            'The Martian rover had stopped transmitting signals entirely.'
+                        ],
+                        correctIndex: 1,
+                        explanation: 'Correct! A paradox involves seemingly contradictory facts: the gyroscopes insisted the station was level, while the star-tracker cameras proved the laser was tilted 1.4 degrees off target.'
+                    },
+                    {
+                        subtitle: 'Photon Pressure',
+                        sceneCaption: 'SOLAR ARRAY // ASYMMETRIC LOAD',
+                        paragraphs: [
+                            "Tariq pulled up the structural strain gauges along the port solar wing. During yesterday's coronal mass ejection, a micrometeorite had sheared off a three-meter reflective foil panel on the starboard side. While trivial in mass, the missing panel created an asymmetric surface area.",
+                            "Because photons carry momentum, sunlight exerted slightly more continuous push on the intact port wing than on the damaged starboard wing. Over eighteen hours, that whisper-soft <strong class='text-emerald-600 dark:text-emerald-400 font-semibold'>relentless</strong> pressure had twisted the carbon-composite truss just enough to bend the laser mount away from the gyroscopes' central housing."
+                        ],
+                        questionType: 'CAUSE & EFFECT',
+                        prompt: 'What physical mechanism caused the optical laser mount to bend off-axis?',
+                        options: [
+                            'High-speed winds from Venus’s upper atmosphere struck the hull.',
+                            'Uneven sunlight pressure on the damaged solar wings gradually twisted the frame.',
+                            'A software glitch caused the thrusters to fire continuously for eighteen hours.',
+                            'The micrometeorite directly smashed the optical laser lens.'
+                        ],
+                        correctIndex: 1,
+                        explanation: 'Exact! Even though photons have no rest mass, they carry momentum. Losing a reflective panel on one wing created uneven solar radiation pressure, slowly twisting the truss.'
+                    },
+                    {
+                        subtitle: 'Trimming the Sails',
+                        sceneCaption: 'ATTITUDE LOCK // LINK ESTABLISHED',
+                        paragraphs: [
+                            "Firing chemical attitude thrusters every ten minutes to fight the sun would exhaust Kepler Relay's propellant reserves within a week. Instead, Tariq opened the manual louver controls for the intact port solar wing and feathered its pitch angle by eleven degrees.",
+                            "By angling the port panels slightly edge-on to the solar glare, he equalized the photon drag across both wings. Within ninety seconds, the carbon truss relaxed back into alignment, the star-tracker crosshairs snapped onto Earth, and a backlog of four terabytes of Martian geological imagery surged across the interplanetary void."
+                        ],
+                        questionType: 'PROBLEM SOLVING',
+                        prompt: 'Why did Tariq adjust the angle of the port solar wing instead of using chemical thrusters?',
+                        options: [
+                            'The chemical thrusters were frozen solid by the vacuum of space.',
+                            'Feathered solar panels balanced the light pressure without wasting limited fuel.',
+                            'Mission Control ordered him to shut down all propulsion systems.',
+                            'Adjusting the wing increased power generation for the laser.'
+                        ],
+                        correctIndex: 1,
+                        explanation: 'Well reasoned! Using chemical thrusters constantly would have depleted fuel in a week, whereas angling the port solar wing neutralized the uneven photon pressure sustainably.'
+                    }
+                ]
+            },
+            {
+                id: 'urban-scoop',
+                genre: 'INVESTIGATIVE JOURNALISM',
+                accentColor: 'amber',
+                title: 'The Midnight Transit Scoop',
+                difficulty: 'Grade 8–10 • Non-Fiction Style',
+                estimatedMinutes: '3 min',
+                synopsis: 'Student reporter Elena notices an unexplained spike in overnight city bus fuel logs, uncovering an off-the-books community lifeline operating after midnight.',
+                parts: [
+                    {
+                        subtitle: 'Anomalies in the Ledger',
+                        sceneCaption: 'CITY ARCHIVE // SPREADSHEET AUDIT',
+                        paragraphs: [
+                            "Every Tuesday afternoon, seventeen-year-old Elena Ruiz combed through municipal open-data spreadsheets for <em>The Crosstown Chronicle</em>, her high school's investigative paper. Most entries were routine—pothole repair timelines, library late-fee totals, and park maintenance budgets. Then a line item in the Metro Transit fuel ledger caught her eye.",
+                            "According to official schedules, Route 44 terminated at 11:30 PM. Yet GPS mileage logs obtained through a public records request showed Bus 408 logging an extra forty-two miles every Wednesday and Friday between 1:00 AM and 3:30 AM, burning diesel fuel that the transit authority categorized as <strong class='text-amber-600 dark:text-amber-400 font-semibold'>ancillary</strong> depot idling."
+                        ],
+                        questionType: 'VOCABULARY IN CONTEXT',
+                        prompt: 'How was the transit authority labeling the fuel burned during the mysterious 1:00 AM – 3:30 AM mileage?',
+                        options: [
+                            'As emergency evacuation testing for severe weather.',
+                            'As "ancillary" (secondary/routine) idling inside the bus depot.',
+                            'As stolen fuel reported to the city police department.',
+                            'As private charter rentals paid for by local businesses.'
+                        ],
+                        correctIndex: 1,
+                        explanation: 'Correct! "Ancillary" refers to secondary or supplementary support activities. Someone was hiding 42 miles of real driving under the label of routine depot idling.'
+                    },
+                    {
+                        subtitle: 'Stakeout on Fourth Street',
+                        sceneCaption: 'TRANSIT CORRIDOR // 01:45 AM OBSERVATION',
+                        paragraphs: [
+                            "Accompanied by her older brother and a notebook, Elena waited under the sodium streetlights outside the industrial bakery district at 1:40 AM on Friday. Punctually at 1:45 AM, Bus 408 rolled quietly around the corner—its destination marquee switched off, its interior lights dimmed to a warm amber.",
+                            "Instead of bypassing the dark shelters, the bus stopped to pick up a dozen night-shift hospital custodians, warehouse packers, and bakery workers who otherwise faced a four-mile walk or an unaffordable rideshare fare. Behind the wheel sat Arthur Pendelton, a thirty-year veteran dispatcher whose own shift officially ended at midnight."
+                        ],
+                        questionType: 'KEY DETAILS',
+                        prompt: 'Who were the passengers boarding Bus 408 during its unscheduled 1:45 AM run?',
+                        options: [
+                            'High school students sneaking out after curfew.',
+                            'Late-night shift workers from hospitals, warehouses, and bakeries.',
+                            'Off-duty transit mechanics testing the bus brakes.',
+                            'City council members inspecting street lighting.'
+                        ],
+                        correctIndex: 1,
+                        explanation: 'Right on target. Elena observed night-shift custodians, warehouse packers, and bakery workers relying on the bus to get home safely without expensive rideshares.'
+                    },
+                    {
+                        subtitle: 'Publishing with Purpose',
+                        sceneCaption: 'FRONT PAGE // POLICY REFORM',
+                        paragraphs: [
+                            "Elena faced an ethical dilemma: publishing an exposé could get a compassionate driver reprimanded for violating transit rules, yet burying the story meant ignoring a glaring failure in public infrastructure. She interviewed six night-shift riders and included transit ridership data proving that post-midnight service cuts had stranded hundreds of essential workers.",
+                            "When her article ran on Monday morning, the public response was overwhelming. Rather than penalizing Pendelton, the city transit board cited Elena's reporting to approve an official 'Night Owl' shuttle pilot—turning a secret act of solidarity into permanent, funded city policy."
+                        ],
+                        questionType: 'THEME & SYNTHESIS',
+                        prompt: 'How did Elena balance journalistic truth with fairness toward Arthur Pendelton?',
+                        options: [
+                            'She omitted the bus number and focused solely on city budget waste.',
+                            'She framed the story around riders’ needs and flawed transit cuts rather than attacking the driver.',
+                            'She waited until Pendelton retired before submitting the article to her editor.',
+                            'She demanded the transit board immediately suspend all night-shift routes.'
+                        ],
+                        correctIndex: 1,
+                        explanation: 'Fantastic synthesis! By centering her reporting on worker testimonies and data showing how service cuts stranded essential staff, Elena catalyzed positive policy change rather than punishment.'
+                    }
+                ]
+            }
+        ];
+
+        /**
+         * Custom Reactive SVG Scene Renderer
+         * Generates crisp, flat vector illustrations (zero gradients) that dynamically evolve
+         * based on the current chapter and reading stage (0, 1, or 2).
+         */
+        function getChapterSVG(chapterId, stageIndex) {
+            if (chapterId === 'cyber-mystery') {
+                const statusColor = stageIndex === 0 ? '#E11D48' : (stageIndex === 1 ? '#F59E0B' : '#10B981');
+                const statusText = stageIndex === 0 ? 'LOCKED // EPHEMERAL_FW' : (stageIndex === 1 ? 'DECODING // 44.1kHz' : 'PATCHED // SECURE');
+                return `
+                <svg viewBox="0 0 600 220" class="w-full h-full max-w-2xl" role="img" aria-label="Cyber Mystery Server Scene">
+                    <!-- Grid Background -->
+                    <rect x="20" y="15" width="560" height="190" rx="12" class="fill-slate-200 dark:fill-slate-900 stroke-slate-300 dark:stroke-slate-700" stroke-width="2"/>
+                    
+                    <!-- Left Server Rack -->
+                    <rect x="45" y="35" width="130" height="150" rx="8" class="fill-slate-800 dark:fill-slate-950 stroke-slate-600" stroke-width="2"/>
+                    <rect x="58" y="50" width="104" height="22" rx="4" class="fill-slate-700"/>
+                    <circle cx="70" cy="61" r="4" fill="${statusColor}" class="anim-pulse-slow"/>
+                    <circle cx="84" cy="61" r="4" fill="${statusColor}"/>
+                    <rect x="100" y="58" width="50" height="6" rx="3" class="fill-slate-500"/>
+
+                    <rect x="58" y="82" width="104" height="22" rx="4" class="fill-slate-700"/>
+                    <circle cx="70" cy="93" r="4" fill="${statusColor}"/>
+                    <circle cx="84" cy="93" r="4" fill="${statusColor}" class="anim-pulse-slow"/>
+                    <rect x="100" y="90" width="50" height="6" rx="3" class="fill-slate-500"/>
+
+                    <rect x="58" y="114" width="104" height="22" rx="4" class="fill-slate-700"/>
+                    <circle cx="70" cy="125" r="4" fill="${statusColor}" class="anim-pulse-slow"/>
+                    <rect x="100" y="122" width="50" height="6" rx="3" class="fill-slate-500"/>
+
+                    <!-- Ventilation Duct Tap (Revealed in Stage 1+) -->
+                    <g opacity="${stageIndex >= 1 ? '1' : '0.25'}" class="transition-opacity duration-500">
+                        <rect x="445" y="35" width="110" height="55" rx="6" class="fill-slate-300 dark:fill-slate-800 stroke-slate-400 dark:stroke-slate-600" stroke-width="2"/>
+                        <line x1="460" y1="48" x2="540" y2="48" class="stroke-slate-500" stroke-width="2"/>
+                        <line x1="460" y1="62" x2="540" y2="62" class="stroke-slate-500" stroke-width="2"/>
+                        <line x1="460" y1="76" x2="540" y2="76" class="stroke-slate-500" stroke-width="2"/>
+                        <!-- Magnetized Raspberry Pi Transceiver -->
+                        <rect x="475" y="96" width="50" height="28" rx="4" fill="#4F46E5" class="anim-float"/>
+                        <circle cx="486" cy="110" r="3" fill="#10B981" class="anim-pulse-slow"/>
+                        <text x="500" y="142" text-anchor="middle" class="fill-slate-600 dark:fill-slate-400 font-mono text-[10px]">SENSOR 12B</text>
+                    </g>
+
+                    <!-- Central Diagnostic Terminal -->
+                    <rect x="200" y="35" width="220" height="150" rx="8" class="fill-slate-900 stroke-indigo-500" stroke-width="2"/>
+                    <rect x="212" y="47" width="196" height="18" rx="4" class="fill-slate-800"/>
+                    <circle cx="223" cy="56" r="3.5" fill="#E11D48"/>
+                    <circle cx="234" cy="56" r="3.5" fill="#F59E0B"/>
+                    <circle cx="245" cy="56" r="3.5" fill="#10B981"/>
+                    <text x="310" y="59" text-anchor="middle" fill="${statusColor}" class="font-mono text-[9px] font-bold">${statusText}</text>
+
+                    <!-- Dynamic Spectrogram Bars -->
+                    <g transform="translate(225, 82)">
+                        <rect x="0" y="${stageIndex === 1 ? '10' : '25'}" width="10" height="${stageIndex === 1 ? '45' : '30'}" rx="2" fill="#6366F1" class="transition-all duration-500"/>
+                        <rect x="18" y="${stageIndex === 1 ? '5' : '32'}" width="10" height="${stageIndex === 1 ? '50' : '23'}" rx="2" fill="${statusColor}" class="transition-all duration-500"/>
+                        <rect x="36" y="${stageIndex === 1 ? '18' : '20'}" width="10" height="${stageIndex === 1 ? '37' : '35'}" rx="2" fill="#6366F1" class="transition-all duration-500"/>
+                        <rect x="54" y="${stageIndex === 1 ? '2' : '38'}" width="10" height="${stageIndex === 1 ? '53' : '17'}" rx="2" fill="${statusColor}" class="transition-all duration-500"/>
+                        <rect x="72" y="${stageIndex === 1 ? '14' : '24'}" width="10" height="${stageIndex === 1 ? '41' : '31'}" rx="2" fill="#6366F1" class="transition-all duration-500"/>
+                        <rect x="90" y="${stageIndex === 1 ? '6' : '30'}" width="10" height="${stageIndex === 1 ? '49' : '25'}" rx="2" fill="${statusColor}" class="transition-all duration-500"/>
+                        <rect x="108" y="${stageIndex === 1 ? '20' : '18'}" width="10" height="${stageIndex === 1 ? '35' : '37'}" rx="2" fill="#6366F1" class="transition-all duration-500"/>
+                        <rect x="126" y="${stageIndex === 1 ? '8' : '28'}" width="10" height="${stageIndex === 1 ? '47' : '27'}" rx="2" fill="${statusColor}" class="transition-all duration-500"/>
+                        <rect x="144" y="${stageIndex === 1 ? '15' : '22'}" width="10" height="${stageIndex === 1 ? '40' : '33'}" rx="2" fill="#6366F1" class="transition-all duration-500"/>
+                        <rect x="162" y="${stageIndex === 1 ? '4' : '34'}" width="10" height="${stageIndex === 1 ? '51' : '21'}" rx="2" fill="${statusColor}" class="transition-all duration-500"/>
+                    </g>
+
+                    <!-- Bottom Terminal Line -->
+                    <text x="220" y="165" class="fill-slate-300 font-mono text-[10px]">
+                        ${stageIndex === 0 ? '> ALERT: metronome.wav active' : (stageIndex === 1 ? '> ASCII: EAST_WING_DUCT_12B' : '> DEPLOYED: VANCE_PATCH_OK')}
+                    </text>
+                    <rect x="392" y="156" width="6" height="11" fill="#10B981" class="anim-blink"/>
+                </svg>`;
+            }
+
+            if (chapterId === 'orbital-log') {
+                // Wing tilt reflects thermal/photon imbalance in stage 0 & 1, then snaps level (0 deg) in stage 2
+                const wingAngle = stageIndex === 2 ? 0 : (stageIndex === 1 ? -7 : -4);
+                const laserColor = stageIndex === 2 ? '#10B981' : '#F59E0B';
+                return `
+                <svg viewBox="0 0 600 220" class="w-full h-full max-w-2xl" role="img" aria-label="Orbital Relay Station Scene">
+                    <!-- Deep Space Backdrop -->
+                    <rect x="20" y="15" width="560" height="190" rx="12" fill="#0B0F19" stroke="#1E293B" stroke-width="2"/>
+                    
+                    <!-- Crisp Stars (Solid circles) -->
+                    <circle cx="70" cy="45" r="1.5" fill="#94A3B8"/>
+                    <circle cx="150" cy="35" r="2" fill="#E2E8F0" class="anim-pulse-slow"/>
+                    <circle cx="480" cy="42" r="1.5" fill="#94A3B8"/>
+                    <circle cx="530" cy="85" r="2" fill="#E2E8F0"/>
+                    <circle cx="430" cy="175" r="1.5" fill="#94A3B8"/>
+
+                    <!-- Venus Curvature at Bottom Left -->
+                    <circle cx="90" cy="270" r="130" fill="#D97706"/>
+                    <circle cx="90" cy="270" r="122" fill="#F59E0B"/>
+
+                    <!-- Solar Photon Rays (Left Side) -->
+                    <g stroke="#FBBF24" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.65">
+                        <line x1="40" y1="75" x2="185" y2="75"/>
+                        <line x1="40" y1="110" x2="185" y2="110"/>
+                        <line x1="40" y1="145" x2="185" y2="145"/>
+                    </g>
+
+                    <!-- Kepler Relay Satellite Group -->
+                    <g transform="translate(310, 110) rotate(${wingAngle})" class="transition-transform duration-700">
+                        <!-- Port Solar Wing (Intact, feathered in Stage 2) -->
+                        <rect x="-135" y="${stageIndex === 2 ? '-14' : '-28'}" width="95" height="${stageIndex === 2 ? '28' : '56'}" rx="4" fill="#1D4ED8" stroke="#60A5FA" stroke-width="2" class="transition-all duration-500"/>
+                        <line x1="-103" y1="-28" x2="-103" y2="28" stroke="#60A5FA" stroke-width="1" opacity="${stageIndex === 2 ? '0' : '0.6'}"/>
+                        <line x1="-71" y1="-28" x2="-71" y2="28" stroke="#60A5FA" stroke-width="1" opacity="${stageIndex === 2 ? '0' : '0.6'}"/>
+
+                        <!-- Starboard Solar Wing (Missing outer panel from micrometeorite) -->
+                        <rect x="40" y="-28" width="65" height="56" rx="4" fill="#1D4ED8" stroke="#60A5FA" stroke-width="2"/>
+                        <rect x="108" y="-28" width="27" height="56" rx="3" fill="none" stroke="#E11D48" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+                        <!-- Central Core Hull -->
+                        <rect x="-32" y="-36" width="64" height="72" rx="10" fill="#334155" stroke="#94A3B8" stroke-width="2"/>
+                        <!-- Radiator Fin -->
+                        <rect x="-20" y="-48" width="40" height="8" rx="2" fill="#E11D48" class="anim-pulse-slow"/>
+                        
+                        <!-- Optical Laser Dish -->
+                        <path d="M -18 36 Q 0 52 18 36 Z" fill="#CBD5E1"/>
+                        <!-- Laser Beam to Earth -->
+                        <line x1="0" y1="45" x2="${stageIndex === 2 ? '160' : '195'}" y2="-85" stroke="${laserColor}" stroke-width="2.5" stroke-dasharray="8 4"/>
+                    </g>
+
+                    <!-- Earth Target Crosshair (Top Right) -->
+                    <g transform="translate(470, 38)">
+                        <circle cx="0" cy="0" r="10" fill="#2563EB"/>
+                        <circle cx="0" cy="0" r="16" fill="none" stroke="${laserColor}" stroke-width="1.5" stroke-dasharray="3 3" class="anim-spin-slow"/>
+                        <text x="0" y="28" text-anchor="middle" fill="#E2E8F0" class="font-mono text-[9px]">EARTH LINK</text>
+                    </g>
+
+                    <!-- HUD Telemetry Pill -->
+                    <rect x="35" y="25" width="175" height="24" rx="6" fill="#1E293B"/>
+                    <text x="122" y="40" text-anchor="middle" fill="${laserColor}" class="font-mono text-[10px] font-bold">
+                        ${stageIndex === 0 ? 'GIMBAL OFFSET: +1.4°' : (stageIndex === 1 ? 'PHOTON TORQUE DETECTED' : 'WING FEATHERED // LOCKED')}
+                    </text>
+                </svg>`;
+            }
+
+            // Chapter 3: Urban Journalism Scoop
+            const busX = stageIndex === 0 ? 90 : (stageIndex === 1 ? 230 : 370);
+            const routeText = stageIndex === 2 ? 'NIGHT OWL EXPRESS' : 'OUT OF SERVICE';
+            const badgeColor = stageIndex === 2 ? '#10B981' : '#F59E0B';
+            return `
+            <svg viewBox="0 0 600 220" class="w-full h-full max-w-2xl" role="img" aria-label="Midnight Transit Scoop Scene">
+                <!-- Night Sky / Urban Backdrop -->
+                <rect x="20" y="15" width="560" height="190" rx="12" fill="#111827" stroke="#374151" stroke-width="2"/>
+                
+                <!-- City Buildings Silhouettes -->
+                <rect x="45" y="55" width="75" height="115" fill="#1F2937"/>
+                <rect x="60" y="70" width="12" height="14" fill="#FBBF24" opacity="0.7"/>
+                <rect x="90" y="95" width="12" height="14" fill="#FBBF24" opacity="0.4"/>
+
+                <rect x="135" y="40" width="90" height="130" fill="#1E293B"/>
+                <rect x="155" y="60" width="14" height="14" fill="#38BDF8" opacity="0.5"/>
+                <rect x="185" y="60" width="14" height="14" fill="#FBBF24" opacity="0.8"/>
+
+                <rect x="390" y="50" width="145" height="120" fill="#1F2937"/>
+                <text x="462" y="75" text-anchor="middle" fill="#9CA3AF" class="font-mono text-[10px]">4TH ST BAKERY &amp; DEPOT</text>
+
+                <!-- Streetlight -->
+                <line x1="340" y1="65" x2="340" y2="170" stroke="#6B7280" stroke-width="4"/>
+                <path d="M 340 65 L 315 65" stroke="#6B7280" stroke-width="4"/>
+                <circle cx="315" cy="68" r="5" fill="#FDE047" class="anim-pulse-slow"/>
+
+                <!-- Roadway -->
+                <rect x="20" y="170" width="560" height="35" rx="4" fill="#374151"/>
+                <line x1="40" y1="187" x2="560" y2="187" stroke="#9CA3AF" stroke-width="2" stroke-dasharray="16 14"/>
+
+                <!-- Moving Transit Bus 408 -->
+                <g transform="translate(${busX}, 112)" class="transition-transform duration-700">
+                    <!-- Bus Chassis -->
+                    <rect x="0" y="0" width="155" height="52" rx="8" fill="#D97706" stroke="#FBBF24" stroke-width="2"/>
+                    <!-- Roof -->
+                    <rect x="8" y="-5" width="139" height="6" rx="3" fill="#B45309"/>
+                    <!-- Destination Marquee -->
+                    <rect x="14" y="6" width="127" height="12" rx="2" fill="#111827"/>
+                    <text x="77" y="15" text-anchor="middle" fill="${badgeColor}" class="font-mono text-[8px] font-bold">${routeText}</text>
+                    <!-- Passenger Windows -->
+                    <rect x="14" y="22" width="26" height="16" rx="2" fill="#FEF3C7"/>
+                    <rect x="46" y="22" width="26" height="16" rx="2" fill="#FEF3C7"/>
+                    <rect x="78" y="22" width="26" height="16" rx="2" fill="#FEF3C7"/>
+                    <rect x="112" y="22" width="28" height="22" rx="2" fill="#FDE68A"/>
+                    <!-- Headlight Beam -->
+                    <polygon points="155,36 195,26 195,48" fill="#FEF08A" opacity="0.45"/>
+                    <!-- Wheels -->
+                    <circle cx="34" cy="52" r="10" fill="#111827" stroke="#9CA3AF" stroke-width="2.5"/>
+                    <circle cx="122" cy="52" r="10" fill="#111827" stroke="#9CA3AF" stroke-width="2.5"/>
+                </g>
+
+                <!-- Top Status Pill -->
+                <rect x="35" y="24" width="205" height="24" rx="6" fill="#1F2937"/>
+                <text x="137" y="39" text-anchor="middle" fill="${badgeColor}" class="font-mono text-[10px] font-bold">
+                    ${stageIndex === 0 ? 'GPS LOG: +42 UNLISTED MILES' : (stageIndex === 1 ? '01:45 AM // NIGHT SHIFT PICKUP' : 'CHRONICLE SCOOP // APPROVED')}
+                </text>
+            </svg>`;
+        }
+
+        /**
+         * Main Game Controller
+         */
+        const app = {
+            state: {
+                xp: 0,
+                streak: 0,
+                completedChapters: {}, // { chapterId: { wpm, accuracy } }
+                activeChapter: null,
+                currentStage: 0,
+                isReading: false,
+                startTime: null,
+                timerInterval: null,
+                elapsedSeconds: 0,
+                stageWpms: [],
+                stageCorrectCount: 0,
+                answeredCurrent: false,
+                useSerifFont: true
+            },
+
+            init() {
+                this.loadProgress();
+                this.renderHUD();
+                this.renderHub();
+            },
+
+            loadProgress() {
+                try {
+                    const saved = localStorage.getItem('lexiquest_save_v1');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        this.state.xp = parsed.xp || 0;
+                        this.state.streak = parsed.streak || 0;
+                        this.state.completedChapters = parsed.completedChapters || {};
+                    }
+                } catch (e) {
+                    console.warn('Storage unavailable, running in session mode.');
+                }
+            },
+
+            saveProgress() {
+                try {
+                    localStorage.setItem('lexiquest_save_v1', JSON.stringify({
+                        xp: this.state.xp,
+                        streak: this.state.streak,
+                        completedChapters: this.state.completedChapters
+                    }));
+                } catch (e) {
+                    // Ignore storage errors in restricted environments
+                }
+            },
+
+            toggleTheme() {
+                const html = document.documentElement;
+                html.classList.toggle('dark');
+            },
+
+            toggleFocusFont() {
+                this.state.useSerifFont = !this.state.useSerifFont;
+                const el = document.getElementById('passage-content');
+                if (this.state.useSerifFont) {
+                    el.classList.remove('font-sans');
+                    el.classList.add('font-serif');
+                } else {
+                    el.classList.remove('font-serif');
+                    el.classList.add('font-sans');
+                }
+            },
+
+            renderHUD() {
+                document.getElementById('hud-streak').textContent = this.state.streak;
+                const level = Math.floor(this.state.xp / 300) + 1;
+                const ranks = ['INITIATE', 'ANALYST', 'DECODER', 'INVESTIGATOR', 'EDITOR-IN-CHIEF'];
+                const rankTitle = ranks[Math.min(level - 1, ranks.length - 1)];
+                const currentLevelXp = this.state.xp % 300;
+                const pct = Math.min(100, Math.round((currentLevelXp / 300) * 100));
+
+                document.getElementById('hud-rank').textContent = `LVL ${level} · ${rankTitle}`;
+                document.getElementById('hud-xp-text').textContent = `${this.state.xp} XP`;
+                document.getElementById('hud-xp-bar').style.width = `${pct}%`;
+            },
+
+            renderHub() {
+                const grid = document.getElementById('chapter-grid');
+                const completedKeys = Object.keys(this.state.completedChapters);
+                document.getElementById('hub-completed-count').textContent = `${completedKeys.length} / ${CHAPTERS.length}`;
+
+                if (completedKeys.length > 0) {
+                    const totalWpm = completedKeys.reduce((sum, key) => sum + this.state.completedChapters[key].wpm, 0);
+                    document.getElementById('hub-avg-wpm').textContent = `${Math.round(totalWpm / completedKeys.length)} WPM`;
+                } else {
+                    document.getElementById('hub-avg-wpm').textContent = '-- WPM';
+                }
+
+                grid.innerHTML = CHAPTERS.map(ch => {
+                    const record = this.state.completedChapters[ch.id];
+                    const badgeClasses = ch.accentColor === 'indigo'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                        : ch.accentColor === 'emerald'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                        : 'bg-amber-50 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+
+                    return `
+                    <article class="bg-surface-light dark:bg-surface-dark border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex flex-col justify-between transition-all hover:border-indigo-400 dark:hover:border-indigo-500 theme-transition">
+                        <div>
+                            <!-- Mini SVG Preview Header -->
+                            <div class="h-36 bg-slate-100 dark:bg-[#0E1117] border-b border-slate-200 dark:border-slate-800 p-3 flex items-center justify-center">
+                                ${getChapterSVG(ch.id, record ? 2 : 0)}
+                            </div>
+                            <div class="p-6 space-y-3">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-[11px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-md border ${badgeClasses}">
+                                        ${ch.genre}
+                                    </span>
+                                    ${record ? `
+                                        <span class="inline-flex items-center gap-1 text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                            ${record.wpm} WPM
+                                        </span>
+                                    ` : `<span class="text-xs font-mono text-slate-400">${ch.estimatedMinutes}</span>`}
+                                </div>
+                                <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-snug">${ch.title}</h3>
+                                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">${ch.synopsis}</p>
+                            </div>
+                        </div>
+
+                        <div class="px-6 pb-6 pt-2">
+                            <div class="text-[11px] font-mono text-slate-500 dark:text-slate-400 mb-3">${ch.difficulty} • 3 Stages</div>
+                            <button onclick="app.startChapter('${ch.id}')" class="w-full py-3 px-4 rounded-xl bg-slate-900 hover:bg-indigo-600 dark:bg-slate-800 dark:hover:bg-indigo-500 text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2">
+                                <span>${record ? 'Replay Briefing' : 'Start Reading'}</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                    </article>`;
+                }).join('');
+            },
+
+            switchView(viewId) {
+                ['view-hub', 'view-arena', 'view-summary'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+                document.getElementById(viewId).classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+
+            goHome() {
+                this.stopTimer();
+                this.renderHub();
+                this.switchView('view-hub');
+            },
+
+            startChapter(chapterId) {
+                const chapter = CHAPTERS.find(c => c.id === chapterId);
+                if (!chapter) return;
+
+                this.state.activeChapter = chapter;
+                this.state.currentStage = 0;
+                this.state.stageWpms = [];
+                this.state.stageCorrectCount = 0;
+
+                document.getElementById('arena-genre-badge').textContent = chapter.genre;
+                document.getElementById('arena-title').textContent = chapter.title;
+
+                this.loadStage(0);
+                this.switchView('view-arena');
+            },
+
+            replayChapter() {
+                if (this.state.activeChapter) {
+                    this.startChapter(this.state.activeChapter.id);
+                }
+            },
+
+            loadStage(stageIndex) {
+                const chapter = this.state.activeChapter;
+                const stage = chapter.parts[stageIndex];
+                this.state.currentStage = stageIndex;
+                this.state.answeredCurrent = false;
+
+                // Update Stage Indicators
+                document.getElementById('scene-caption').textContent = stage.sceneCaption;
+                document.getElementById('passage-part-label').textContent = `PART ${stageIndex + 1} OF ${chapter.parts.length}`;
+                document.getElementById('passage-subtitle').textContent = stage.subtitle;
+                document.getElementById('question-type-badge').textContent = stage.questionType;
+                document.getElementById('question-counter').textContent = `STAGE ${stageIndex + 1} / ${chapter.parts.length}`;
+
+                // Update Progress Dots
+                const dotsContainer = document.getElementById('stage-dots');
+                dotsContainer.innerHTML = chapter.parts.map((_, idx) => {
+                    const active = idx <= stageIndex;
+                    return `<span class="w-2.5 h-2.5 rounded-full transition-colors ${active ? 'bg-indigo-600 dark:bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}"></span>`;
+                }).join('');
+
+                // Render Reactive SVG Illustration
+                document.getElementById('svg-stage').innerHTML = getChapterSVG(chapter.id, stageIndex);
+
+                // Render Narrative Paragraphs
+                const contentEl = document.getElementById('passage-content');
+                contentEl.innerHTML = stage.paragraphs.map(p => `<p>${p}</p>`).join('');
+
+                // Reset Challenge Panel to Locked Reading Mode
+                document.getElementById('reading-complete-bar').classList.remove('hidden');
+                document.getElementById('challenge-locked').classList.remove('hidden');
+                document.getElementById('challenge-active').classList.add('hidden');
+                document.getElementById('feedback-box').classList.add('hidden');
+                document.getElementById('next-stage-btn').classList.add('hidden');
+
+                // Start Live Reading Timer & WPM Calculator
+                this.startTimer(stage.paragraphs);
+            },
+
+            countWords(paragraphs) {
+                const plainText = paragraphs.join(' ').replace(/<[^>]*>/g, '');
+                return plainText.trim().split(/\s+/).length;
+            },
+
+            startTimer(paragraphs) {
+                this.stopTimer();
+                const wordCount = this.countWords(paragraphs);
+                this.state.elapsedSeconds = 0;
+                this.state.isReading = true;
+
+                const updateDisplay = () => {
+                    const mins = String(Math.floor(this.state.elapsedSeconds / 60)).padStart(2, '0');
+                    const secs = String(this.state.elapsedSeconds % 60).padStart(2, '0');
+                    document.getElementById('timer-display').textContent = `${mins}:${secs}`;
+
+                    // Calculate live WPM (minimum 3 seconds to avoid unrealistic spikes)
+                    const effectiveSeconds = Math.max(3, this.state.elapsedSeconds);
+                    const liveWpm = Math.round((wordCount / effectiveSeconds) * 60);
+                    document.getElementById('wpm-display').textContent = liveWpm;
+                };
+
+                updateDisplay();
+                this.state.timerInterval = setInterval(() => {
+                    if (this.state.isReading) {
+                        this.state.elapsedSeconds++;
+                        updateDisplay();
+                    }
+                }, 1000);
+            },
+
+            stopTimer() {
+                this.state.isReading = false;
+                if (this.state.timerInterval) {
+                    clearInterval(this.state.timerInterval);
+                    this.state.timerInterval = null;
+                }
+            },
+
+            finishReadingSegment() {
+                this.stopTimer();
+                const stage = this.state.activeChapter.parts[this.state.currentStage];
+                const wordCount = this.countWords(stage.paragraphs);
+                const effectiveSeconds = Math.max(4, this.state.elapsedSeconds);
+                const recordedWpm = Math.min(650, Math.round((wordCount / effectiveSeconds) * 60));
+
+                this.state.stageWpms.push(recordedWpm);
+                document.getElementById('wpm-display').textContent = recordedWpm;
+
+                // Reveal Question UI
+                document.getElementById('reading-complete-bar').classList.add('hidden');
+                document.getElementById('challenge-locked').classList.add('hidden');
+                const activePanel = document.getElementById('challenge-active');
+                activePanel.classList.remove('hidden');
+                activePanel.classList.add('anim-pop');
+
+                this.renderQuestion(stage);
+            },
+
+            renderQuestion(stage) {
+                document.getElementById('question-prompt').textContent = stage.prompt;
+                const container = document.getElementById('options-container');
+                const letters = ['A', 'B', 'C', 'D'];
+
+                container.innerHTML = stage.options.map((opt, idx) => `
+                    <button onclick="app.submitAnswer(${idx})" id="opt-btn-${idx}" class="w-full text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-canvas-light dark:bg-canvas-dark hover:border-indigo-500 dark:hover:border-indigo-400 transition-all flex items-start gap-3 group">
+                        <span class="w-6 h-6 rounded-md bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 flex items-center justify-center font-mono text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 shrink-0 mt-0.5 transition-colors">
+                            ${letters[idx]}
+                        </span>
+                        <span class="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 leading-snug">${opt}</span>
+                    </button>
+                `).join('');
+            },
+
+            submitAnswer(selectedIndex) {
+                if (this.state.answeredCurrent) return;
+                this.state.answeredCurrent = true;
+
+                const chapter = this.state.activeChapter;
+                const stage = chapter.parts[this.state.currentStage];
+                const isCorrect = selectedIndex === stage.correctIndex;
+
+                // Style all option buttons
+                stage.options.forEach((_, idx) => {
+                    const btn = document.getElementById(`opt-btn-${idx}`);
+                    btn.disabled = true;
+                    btn.classList.remove('hover:border-indigo-500', 'dark:hover:border-indigo-400');
+
+                    if (idx === stage.correctIndex) {
+                        btn.classList.remove('bg-canvas-light', 'dark:bg-canvas-dark', 'border-slate-200', 'dark:border-slate-700');
+                        btn.classList.add('bg-emerald-50', 'dark:bg-emerald-950/60', 'border-emerald-500', 'dark:border-emerald-500');
+                    } else if (idx === selectedIndex && !isCorrect) {
+                        btn.classList.remove('bg-canvas-light', 'dark:bg-canvas-dark', 'border-slate-200', 'dark:border-slate-700');
+                        btn.classList.add('bg-rose-50', 'dark:bg-rose-950/60', 'border-rose-500', 'dark:border-rose-500', 'anim-shake');
+                    } else {
+                        btn.classList.add('opacity-50');
+                    }
+                });
+
+                // Update XP & Streak
+                const feedbackBox = document.getElementById('feedback-box');
+                const feedbackTitle = document.getElementById('feedback-title');
+                const feedbackExp = document.getElementById('feedback-explanation');
+
+                feedbackBox.classList.remove('hidden', 'bg-emerald-50', 'dark:bg-emerald-950/50', 'border-emerald-200', 'dark:border-emerald-800', 'text-emerald-900', 'dark:text-emerald-200', 'bg-rose-50', 'dark:bg-rose-950/50', 'border-rose-200', 'dark:border-rose-800', 'text-rose-900', 'dark:text-rose-200');
+
+                if (isCorrect) {
+                    this.state.stageCorrectCount++;
+                    this.state.streak++;
+                    const streakBonus = Math.min(50, this.state.streak * 10);
+                    const earned = 50 + streakBonus;
+                    this.state.xp += earned;
+
+                    feedbackBox.classList.add('bg-emerald-50', 'dark:bg-emerald-950/50', 'border-emerald-200', 'dark:border-emerald-800', 'text-emerald-900', 'dark:text-emerald-200');
+                    feedbackTitle.innerHTML = `<svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span>Spot On! (+${earned} XP)</span>`;
+                } else {
+                    this.state.streak = 0;
+                    this.state.xp += 15; // Participation XP for close reading
+                    feedbackBox.classList.add('bg-rose-50', 'dark:bg-rose-950/50', 'border-rose-200', 'dark:border-rose-800', 'text-rose-900', 'dark:text-rose-200');
+                    feedbackTitle.innerHTML = `<svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> <span>Not Quite (+15 XP)</span>`;
+                }
+
+                feedbackExp.textContent = stage.explanation;
+                this.renderHUD();
+                this.saveProgress();
+
+                // Show Advance Button
+                const nextBtn = document.getElementById('next-stage-btn');
+                const nextLabel = document.getElementById('next-stage-label');
+                nextBtn.classList.remove('hidden');
+
+                if (this.state.currentStage + 1 < chapter.parts.length) {
+                    nextLabel.textContent = `Continue to Part ${this.state.currentStage + 2}`;
+                } else {
+                    nextLabel.textContent = 'View Briefing Debrief';
+                }
+            },
+
+            advanceStage() {
+                const chapter = this.state.activeChapter;
+                if (this.state.currentStage + 1 < chapter.parts.length) {
+                    this.loadStage(this.state.currentStage + 1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    this.completeChapter();
+                }
+            },
+
+            completeChapter() {
+                const chapter = this.state.activeChapter;
+                const avgWpm = Math.round(
+                    this.state.stageWpms.reduce((a, b) => a + b, 0) / this.state.stageWpms.length
+                );
+                const accuracy = Math.round((this.state.stageCorrectCount / chapter.parts.length) * 100);
+                const completionBonus = 75;
+                this.state.xp += completionBonus;
+
+                this.state.completedChapters[chapter.id] = {
+                    wpm: avgWpm,
+                    accuracy: accuracy
+                };
+
+                this.renderHUD();
+                this.saveProgress();
+
+                // Populate Summary View
+                document.getElementById('summary-chapter-title').textContent = chapter.title;
+                document.getElementById('summary-wpm').textContent = `${avgWpm} WPM`;
+                document.getElementById('summary-accuracy').textContent = `${accuracy}%`;
+                document.getElementById('summary-xp').textContent = `+${completionBonus + (this.state.stageCorrectCount * 50)} XP`;
+
+                const paceNote = document.getElementById('summary-pace-note');
+                if (avgWpm > 280 && accuracy < 70) {
+                    paceNote.textContent = `You read very quickly (${avgWpm} WPM), which may have caused a missed detail. Try slowing down slightly on dense vocabulary clues to boost accuracy.`;
+                } else if (avgWpm >= 190 && accuracy === 100) {
+                    paceNote.textContent = `Elite comprehension! Maintaining 100% accuracy at ${avgWpm} WPM shows strong active reading and context-clue mastery.`;
+                } else {
+                    paceNote.textContent = `Steady, thoughtful pacing at ${avgWpm} WPM. High school readers typically average between 200 and 250 WPM on analytical passages.`;
+                }
+
+                this.switchView('view-summary');
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => app.init());
+    </script>
+</body>
+</html>
