@@ -2,7 +2,8 @@ from flask import *
 from functools import wraps
 from dotenv import load_dotenv
 import os
-import pymysql
+import psycopg2
+from psycopg2.extras import DictCursor,RealDictCursor
 import uuid
 from gemini import run
 
@@ -10,8 +11,9 @@ load_dotenv()
 
 adminbp = Blueprint('admin',__name__,url_prefix='/admin')
 def db():
-    conn = pymysql.connect(host='localhost',database='readdb',password='Sami@4998',user='root')
-    return conn
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    connection = psycopg2.connect(DATABASE_URL)
+    return connection
 
 def login_required(f):
     @wraps(f)
@@ -50,7 +52,7 @@ def dash():
 @login_required
 def passages():
     with db() as conn:
-        cur = conn.cursor(cursor=pymysql.cursors.DictCursor)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT * FROM passages")
         passages = cur.fetchall()
     return render_template('admin/passages.html',passages=passages)
@@ -84,7 +86,7 @@ import json
 def addquiz(passid):
     if request.method == 'GET':
         with db() as conn:
-            cur = conn.cursor(cursor=pymysql.cursors.DictCursor)
+            cur = conn.cursor(cursor_factory=RealDictCursor)
             cur.execute("SELECT * FROM passages WHERE passage_id = %s", (passid,))
             data = cur.fetchone()
         return render_template("admin/quizform.html", data=data)
@@ -128,7 +130,7 @@ JOIN passages
     ON audiorec.passage = passages.passage_id;
     '''
     with db() as conn:
-        cur = conn.cursor(cursor=pymysql.cursors.DictCursor)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(query)
         audios = cur.fetchall()
     return render_template('admin/evaluate.html',audios=audios)

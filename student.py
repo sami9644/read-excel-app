@@ -1,5 +1,5 @@
 from flask import *
-import pymysql
+import psycopg2
 import uuid
 from werkzeug.security import generate_password_hash,check_password_hash
 from functools import wraps
@@ -10,14 +10,16 @@ import os
 from gemini import run
 import json
 import re
+from psycopg2.extras import DictCursor,RealDictCursor
 
 studentbp = Blueprint('student',__name__,url_prefix='/student')
 def db():
-    conn = pymysql.connect(host='localhost',database='readdb',password='Sami@4998',user='root')
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    conn = psycopg2.connect(DATABASE_URL)
     return conn
 
 from datetime import timedelta
-import pymysql
+
 
 def extend_student_payment(studid, months=1):
     connection = db()
@@ -25,7 +27,7 @@ def extend_student_payment(studid, months=1):
     days_to_add = months * 30
     
     try:
-        with connection.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
+        with connection.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute("SELECT paiduntil FROM students WHERE studid = %s", (studid,))
             student = cursor.fetchone()
             
@@ -77,7 +79,7 @@ def payment_required(f):
         connection = db()
         
         try:
-            with connection.cursor(cursor=pymysql.cursors.DictCursor) as cursor:
+            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("SELECT paiduntil FROM students WHERE studid = %s", (studid,))
                 student = cursor.fetchone()
                 
@@ -93,7 +95,7 @@ def payment_required(f):
 
 def get_student_age(studid):
     with db() as conn:
-        with conn.cursor(cursor=pymysql.cursors.DictCursor) as cur:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT birthdate FROM students WHERE studid = %s", (studid,))
             student = cur.fetchone()
             if not student or not student['birthdate']:
@@ -147,7 +149,7 @@ def login():
     phone = request.form['phone']
     password = request.form['password']
     with db() as conn:
-        cur = conn.cursor(cursor=pymysql.cursors.DictCursor)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT * FROM students WHERE phone = %s",(phone,))
         data = cur.fetchone()
     if data and check_password_hash(data['password'],password):
@@ -190,8 +192,8 @@ def verify(txref,month):
 @payment_required
 def dash():
     with db() as conn:
-        cur = conn.cursor(cursor=pymysql.cursors.DictCursor)
-        cur.execute("SELECT * FROM students WHERE studid = %s",(session['student']))
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM students WHERE studid = %s",(session['student'],))
         data = cur.fetchone()
     return render_template('student/dash.html',data = data)
 
@@ -202,7 +204,7 @@ def passages():
     level = getlevel(session['student'])
     age_category = get_age_category(session['student'])
     with db() as conn:
-        cur = conn.cursor(cursor=pymysql.cursors.DictCursor)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT * FROM passages WHERE CEFR = %s AND age = %s", (level, age_category))
         data = cur.fetchall()
     return render_template("student/passages.html", passages=data)
@@ -212,7 +214,7 @@ def passages():
 @payment_required
 def read(passageid):
     with db() as conn:
-        cur = conn.cursor(cursor=pymysql.cursors.DictCursor)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT * FROM passages WHERE passage_id = %s",(passageid,))
         passage_data = cur.fetchone()
     return render_template('student/audio.html',data = passage_data)
@@ -239,7 +241,7 @@ def upload(passageid):
     args = (str(uuid.uuid4()), audiopath, session['student'], passageid)
     
     with db() as conn:
-        cur = conn.cursor(cursor=pymysql.cursors.DictCursor)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(query, args)
         conn.commit()
         
@@ -274,7 +276,7 @@ def changelevel():
 @payment_required
 def fillquiz(passid):
     with db() as conn:
-        cur = conn.cursor(cursor=pymysql.cursors.DictCursor)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         # Fetch passage details
         cur.execute("SELECT * FROM passages WHERE passage_id = %s", (passid,))
         passage = cur.fetchone()
